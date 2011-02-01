@@ -88,7 +88,7 @@ DATE='1 February 2011';
 #     - Identify the operating system installed on that partition.             #
 #     - List boot programs.                                                    #
 #     - Display the partition table.                                           #
-#     - Display "blkid -c /dev/null".                                          #
+#     - Display the output of "blkid".                                         #
 #     - Look in "/" and "NST" for bootpart codes and display the offset and    #
 #       boot drive, it is trying to chainload.                                 #
 #     - Look on "/" and "/NST" for stage1 files and display the offset and     #
@@ -873,7 +873,7 @@ Read8Bytes () {
 BlkidFormat='%-16s %-38s %-10s %-30s\n';
 
 BlkidTag () {
-  echo $(blkid -c /dev/null -s $2 -o value $1 2>> ${Trash});
+  echo $(blkid -s $2 -o value $1 2>> ${Trash});
 }
 
 
@@ -881,7 +881,7 @@ BlkidTag () {
 PrintBlkid () {
   local part=$1 suffix=$2
 
-  if [ x"$(blkid -c /dev/null ${part} 2> ${Tmp_Log})" != x'' ] ; then
+  if [ x"$(blkid ${part} 2> ${Tmp_Log})" != x'' ] ; then
      printf "${BlkidFormat}" "${part}" "$(BlkidTag ${part} UUID)" "$(BlkidTag ${part} TYPE)" "$(BlkidTag ${part} LABEL)" >> ${BLKID}${suffix};
   else
      # blkid -p is not available on all systems.
@@ -2058,8 +2058,12 @@ printf '%s\n\n\n============================= Boot Info Summary: ===============
 # id for Filesystem Drives.
 FSD=0;
 
+# Clear blkid cache
+blkid -g;
+
 for drive in ${All_Hard_Drives} ; do
   size=$(fdisks ${drive});
+
   PrintBlkid ${drive};
 
   if [ 0 -lt ${size} 2>> ${Trash} ] ; then
@@ -2488,7 +2492,7 @@ printf '============================ Drive/Partition Info: =====================
 [ -e ${PartitionTable} ] && cat ${PartitionTable} >> "${Log}" || echo 'no valid partition table found' >> "${Log}";
 
 
-printf 'blkid -c /dev/null: ____________________________________________________________\n\n' >> "${Log}";
+printf 'blkid __________________________________________________________________________\n\n' >> "${Log}";
 
 printf "${BlkidFormat}" Device UUID TYPE LABEL >> "${Log}";
 
