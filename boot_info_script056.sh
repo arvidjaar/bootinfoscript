@@ -2492,7 +2492,7 @@ printf '============================ Drive/Partition Info: =====================
 [ -e ${PartitionTable} ] && cat ${PartitionTable} >> "${Log}" || echo 'no valid partition table found' >> "${Log}";
 
 
-printf 'blkid __________________________________________________________________________\n\n' >> "${Log}";
+printf '"blkid" output: ________________________________________________________________\n\n' >> "${Log}";
 
 printf "${BlkidFormat}" Device UUID TYPE LABEL >> "${Log}";
 
