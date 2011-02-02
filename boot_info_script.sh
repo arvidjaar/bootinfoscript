@@ -379,9 +379,9 @@ GrubError18_Files='
 SyslinuxError_Files='
 	syslinux.cfg	syslinux/syslinux.cfg	boot/syslinux/syslinux.cfg
 	extlinux.conf	extlinux/extlinux.conf	boot/extlinux/extlinux.conf
-	ldlinux.sys		syslinux/ldlinux.sys	boot/syslinux/ldlinux.sys
+	ldlinux.sys	syslinux/ldlinux.sys	boot/syslinux/ldlinux.sys
 	extlinux.sys	extlinux/extlinux.sys	boot/extlinux/extlinux.sys
-	*.c32			syslinux/*.c32			boot/syslinux/*.c32
+	*.c32		syslinux/*.c32			boot/syslinux/*.c32
 	extlinux/*.c32	boot/extlinux/*.c32
 	'
 
