@@ -922,83 +922,90 @@ ReadPT () {
 
   drive=${HDName[${HI}]};
   limit=${HDSize[${HI}]};
-  $(dd if=${drive} skip=${StartEx} of=${Tmp_Log} count=1 2>> ${Trash});
+
+  dd if=${drive} skip=${StartEx} of=${Tmp_Log} count=1 2>> ${Trash};
+
   MBRSig=$(hexdump -v -s 510 -n 2 -e '"%04x"' ${Tmp_Log});
-  [[ "${MBRSig}" != 'aa55' ]] && echo 'Invalid MBR Signature found' >> ${PT_file};
+
+  [[ "${MBRSig}" != 'aa55' ]] && echo 'Invalid MBR Signature found.' >> ${PT_file};
 
   if [[ ${StartEx} -lt ${limit} ]] ; then
-    # set Base_Sector to 0 for hard drive, and to the start sector of the
-    # primary extended partition otherwise.
-    [[ x"${EPI}" = x'' ]] && Base_Sector=0 || Base_Sector=${StartArray[${EPI}]};
+     # set Base_Sector to 0 for hard drive, and to the start sector of the
+     # primary extended partition otherwise.
+     [[ x"${EPI}" = x'' ]] && Base_Sector=0 || Base_Sector=${StartArray[${EPI}]};
 
-    for (( i=0; i < N; i++ )) ; do
-      $(dd if=${drive} skip=${StartEx} of=${Tmp_Log} count=1 2>> ${Trash});
-      boot_hex=$(hexdump -v -s $((446+16*${i})) -n 1 -e '"%02x"' ${Tmp_Log});
+     for (( i=0; i < N; i++ )) ; do
+       dd if=${drive} skip=${StartEx} of=${Tmp_Log} count=1 2>> ${Trash};
 
-      case ${boot_hex} in
-	00) boot=' ';;
-	80) boot='* ';;
-	 *) boot='?';;
-      esac
+       boot_hex=$(hexdump -v -s $((446+16*${i})) -n 1 -e '"%02x"' ${Tmp_Log});
 
-      # Get amd set: partition type, partition start, and partition size.
-      eval $(hexdump -v -s $((450+16*${i})) -n 12 -e '1/1 "type=%x; " 3/1 "tmp=%x; " 1/4 "start=%u; " 1/4 "size=%u"' ${Tmp_Log});
+       case ${boot_hex} in
+		00) boot=' ';;
+		80) boot='* ';;
+		 *) boot='?';;
+       esac
 
-      if [[ ${size} -ne 0 ]] ; then
-	 if ( ( [ "${type}" = '5' ] || [ "${type}" = 'f' ] ) && [ ${Base_Sector} -ne 0 ] ) ; then
-	    # start sector of an extended partition is relative to the
-	    # start sector of an primary extended partition.
-	    start=$((${start}+${Base_Sector}));
+       # Get amd set: partition type, partition start, and partition size.
+       eval $(hexdump -v -s $((450+16*${i})) -n 12 -e '1/1 "type=%x; " 3/1 "tmp=%x; " 1/4 "start=%u; " 1/4 "size=%u"' ${Tmp_Log});
 
-	    if [[ ${i} -eq 0 ]] ; then
-	       echo 'Extended partition linking to another extended partition' >> ${PT_file};
-	    fi
+       if [[ ${size} -ne 0 ]] ; then
+	  if ( ( [ "${type}" = '5' ] || [ "${type}" = 'f' ] ) && [ ${Base_Sector} -ne 0 ] ) ; then
+	     # start sector of an extended partition is relative to the
+	     # start sector of an primary extended partition.
+	     start=$((${start}+${Base_Sector}));
 
-	    ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${EPI} ${LinuxIndex};
-	 else  
-	    ((PI++))
+	     if [[ ${i} -eq 0 ]] ; then
+	        echo 'Extended partition linking to another extended partition.' >> ${PT_file};
+	     fi
 
-	    if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
-	       KindArray[${PI}]='E';
-	    else
-	       # Start sector of a logical partition is relative to the
-	       # start sector of directly assocated extented partition.
-	       start=$((${start}+${StartEx}));
-	       [[ ${Base_Sector} -eq 0 ]] && KindArray[${PI}]='P' || KindArray[${PI}]='L';
-	    fi
-	    LinuxIndex=$((${LinuxIndex}+1));
-	    end=$((${start}+${size}-1));
-	    [[ "${HDPT[${HI}]}" = 'BootIt' ]] && label="${NamesArray[${EPI}]}_" || label=${drive};
-	    system=$(HexToSystem ${type});
+	     ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${EPI} ${LinuxIndex};
+	  else  
+	     ((PI++));
 
-	    printf "${format}" "${label}${LinuxIndex}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
+	     if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
+	        KindArray[${PI}]='E';
+	     else
+	        # Start sector of a logical partition is relative to the
+	        # start sector of directly assocated extented partition.
+	        start=$((${start}+${StartEx}));
+	        [[ ${Base_Sector} -eq 0 ]] && KindArray[${PI}]='P' || KindArray[${PI}]='L';
+	     fi
 
-	    NamesArray[${PI}]="${label}${LinuxIndex}";
-	    StartArray[${PI}]=${start};
-	    EndArray[${PI}]=${end};
-	    TypeArray[${PI}]=${type};
-	    SystemArray[${PI}]="${system}";
-	    SizeArray[${PI}]=${size};
-	    BootArray[${PI}]="${boot}";
-	    DriveArray[${PI}]=${HI};
-	    ParentArray[${PI}]=${EPI};
+	     LinuxIndex=$((${LinuxIndex}+1));
+	     end=$((${start}+${size}-1));
 
-            ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${LinuxIndex};
+	     [[ "${HDPT[${HI}]}" = 'BootIt' ]] && label="${NamesArray[${EPI}]}_" || label=${drive};
 
-	    if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
-	       ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${PI} 4;
-	    fi
-	 fi
+	     system=$(HexToSystem ${type});
+
+	     printf "${format}" "${label}${LinuxIndex}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
+
+	     NamesArray[${PI}]="${label}${LinuxIndex}";
+	     StartArray[${PI}]=${start};
+	     EndArray[${PI}]=${end};
+	     TypeArray[${PI}]=${type};
+	     SystemArray[${PI}]="${system}";
+	     SizeArray[${PI}]=${size};
+	     BootArray[${PI}]="${boot}";
+	     DriveArray[${PI}]=${HI};
+	     ParentArray[${PI}]=${EPI};
+
+             ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${LinuxIndex};
+
+	     if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
+	        ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${PI} 4;
+	     fi
+	  fi
        
-    elif ( [ ${Base_Sector} -ne 0 ]  && [ ${i} -eq 0 ] ) ; then
-      echo 'Empty Partition' >> ${PT_file};
-    else 
-      LinuxIndex=$((${LinuxIndex}+1));
-    fi
-  done
-else
-  echo 'EBR refers to a location outside the hard drive' >> ${PT_file};
-fi
+       elif ( [ ${Base_Sector} -ne 0 ]  && [ ${i} -eq 0 ] ) ; then
+	  echo 'Empty Partition.' >> ${PT_file};
+       else 
+	  LinuxIndex=$((${LinuxIndex}+1));
+       fi
+     done
+  else
+    echo 'EBR refers to a location outside the hard drive.' >> ${PT_file};
+  fi
 }
 
 
