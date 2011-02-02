@@ -2573,7 +2573,10 @@ fi
 ## Copy the log file to RESULTS file and make the user the owner of RESULTS file. ##
 
 cp "${Log}" "${LogFile}";
-chown "${EUID}" "${LogFile}";
+
+if [ "${SUDO_UID}:${SUDO_GID}" != ':' ] ; then
+   chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}";
+fi
 
 
 
@@ -2586,7 +2589,10 @@ chown "${EUID}" "${LogFile}";
 
 if [ ${gzip_output} -eq 1 ] ; then
    cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
-   chown "${EUID}" "${LogFile}.gz";
+
+   if [ "${SUDO_UID}:${SUDO_GID}" != ':' ] ; then
+      chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}.gz";
+   fi
 fi
 
 
