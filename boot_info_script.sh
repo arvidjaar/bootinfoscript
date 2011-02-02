@@ -485,6 +485,7 @@ exec 2> ${Error_Log}		  # Redirect all standard error to the file Error_Log.
 ## List of all hard drives ##
 #
 #   Support more than 26 drives.
+
 All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] 2>> ${Trash});
 
 
@@ -492,12 +493,15 @@ All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-
 
 if type dmraid >> ${Trash} 2>> ${Trash} ; then
   InActiveDMRaid=$(dmraid -si -c);
+
   if [ x"${InActiveDMRaid}" = x"no raid disks" ] ; then 
      InActiveDMRaid='';
   fi
+
   if [ x"${InActiveDMRaid}" != x'' ] ; then
      dmraid -ay ${InActiveDMRaid} >> ${Trash};
   fi
+
   if [ x"$(dmraid -sa -c)" != x"no raid disks" ] ; then
      All_DMRaid=$(dmraid -sa -c | awk '{ print "/dev/mapper/"$0 }');
      All_Hard_Drives="${All_Hard_Drives} ${All_DMRaid}";
