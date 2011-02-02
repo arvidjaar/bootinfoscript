@@ -559,7 +559,7 @@ FileNotMounted () {
   local File=$1 curmp=$2;
 
   IFS_OLD="${IFS}";  # Save original IFS.
-  IFS=$'\n';         # Set IFS temporarily to newline only, so mount points with spaces can be processed too.
+  IFS=$'\012';       # Set IFS temporarily to newline only, so mount points with spaces can be processed too.
 
   for mp in ${MountPoints}; do 
     if [ $(expr match "${File}" "${mp}/" ) -ne 0 ] && [ "${mp}" != "${curmp}" ] ; then
