@@ -926,7 +926,7 @@ ReadPT () {
     [[ x"${EPI}" = x'' ]] && Base_Sector=0 || Base_Sector=${StartArray[${EPI}]};
 
     for (( i=0; i < N; i++ )) ; do
-      $(dd if=${drive} skip=$StartEx of=${Tmp_Log} count=1 2>> ${Trash});
+      $(dd if=${drive} skip=${StartEx} of=${Tmp_Log} count=1 2>> ${Trash});
       boot_hex=$(hexdump -v -s $((446+16*${i})) -n 1 -e '"%02x"' ${Tmp_Log});
 
       case ${boot_hex} in
@@ -1442,7 +1442,7 @@ last_block_of_file () {
 
   # "$@" contains all function arguments (filenames).
   for file in $(ls "$@" 2>> ${Trash}) ; do
-    if [[ -f $file ]] && [[ -s $file ]] && FileNotMounted "${mountname}/${file}" "${mountname}" ; then
+    if [[ -f ${file} ]] && [[ -s ${file} ]] && FileNotMounted "${mountname}/${file}" "${mountname}" ; then
 
        # There are at least 2 versions of filefrag.
        # For both versions, we can get the blocksize and the location of the block
@@ -1877,7 +1877,7 @@ Get_Partition_Info() {
 	      WubiDev=1;
 	   fi
 
-	   if [ x"$Wubi" != x'' ] ; then
+	   if [ x"${Wubi}" != x'' ] ; then
 	      Get_Partition_Info "${Log}"x "${Log1}"x "${Wubi}" "${name}/Wubi" "Wubi/${mountname}" 'Wubi' 0 0 'Wubi' '';
 
 	      # Remove Wubu loop device, if created by BIS.
@@ -2339,7 +2339,7 @@ for HI in ${!HDName[@]} ; do
 	    ReadEFI ${HI} ${PartitionTable};
 	    echo >> ${PartitionTable};
 
-	    if [ "$EFIee" = 'ee' ] ; then
+	    if [ "${EFIee}" = 'ee' ] ; then
 	       LastPartition[${HI}]=${PI};
 	       CheckPT ${FirstPartition[${HI}]} ${LastPartition[${HI}]} ${PartitionTable} ${HI};
 	    else
@@ -2461,7 +2461,7 @@ if type mdadm >> ${Trash} 2>> ${Trash} ; then
     Get_Partition_Info "${Log}" "${Log1}" "${MD}" "${name}" "${mountname}" "${kind}" "${start}" "${end}" "${system}" "${PI}";
 
     # deactivate all MD_Raid's, which were not active.
-    [[ "$MD_Active" = 0 ]] && mdadm --stop "${MD}";
+    [[ "${MD_Active}" -eq 0 ]] && mdadm --stop "${MD}";
 
   done
 fi
