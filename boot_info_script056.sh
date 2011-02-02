@@ -1190,11 +1190,15 @@ CheckPT () {
 syslinux_info () {
   local partition=$1;
 
+  # Magic number used by Syslinux:
+  local LDLINUX_MAGIC='fe02b23e';
+
   local LDLINUX_BSS LDLINUX_SECTOR2 sect1ptr0_offset sect1ptr0 sect1ptr1 tmp;
   local magic_offset syslinux_version syslinux_dir;
   # Patch area variables:
-  local pa_size pa_hexdump_format pa_magic pa_instance pa_data_sectors;
+  local pa_version pa_size pa_hexdump_format pa_magic pa_instance pa_data_sectors;
   local pa_adv_sectors pa_dwords pa_checksum pa_maxtransfer pa_epaoffset;
+  local pa_ldl_sectors pa_dir_inode;
   # Extended patch area variables:
   local epa_size epa_hexdump_format epa_advptroffset epa_diroffset epa_dirlen;
   local epa_subvoloffset epa_subvollen epa_secptroffset epa_secptrcnt;
@@ -1203,77 +1207,137 @@ syslinux_info () {
   # Clear previous Syslinux message string.
   Syslinux_Msg='';
 
-  # Read first 512 bytes of partition and convert to hex
+  # Read first 512 bytes of partition and convert to hex (ldlinux.bss)
   LDLINUX_BSS=$(hexdump -v -n512 -e '/1 "%02x"' ${partition});
 
-  # Search for offset to sect1ptr0 (only found in Syslinux 4.xx)
-  #   66 b8 xx xx xx xx 66 ba xx xx xx xx bb 00
-  #         [sect1ptr0]       [sect1ptr1]
-  #
-  # Search for this hex string after the DOS superblock: byte 0x5a = 90
-  eval $(echo ${LDLINUX_BSS:$((180)):844} \
-	| awk '{ mask_offset=match($0,"66b8........66ba........bb00"); \
+  # Look for LDLINUX_MAGIC: bytes 504-507
+  if [ "${LDLINUX_BSS:1008:8}" = "${LDLINUX_MAGIC}" ] ; then
+     # Syslinux 4.04-pre5 and higher.
+     pa_version=4;	 # Syslinux 4.xx patch area
+
+     # sect1ptr0_offset: bitwise XOR of bytes 508-509 with 0x1b << 9 gives offset
+     # (in bytes) to the location where sect1ptr0 is stored.
+     sect1ptr0_offset=$(( 0x"${LDLINUX_BSS:1016:4}" ^ ( 0x1b << 9 ) ));
+
+     # Get "boot sector offset" (in sectors) of sector 1 ptr LSW: sect1ptr0
+     # Get "boot sector offset" (in sectors) of sector 1 ptr MSW: sect1ptr1
+     eval $(hexdump -v -s ${sect1ptr0_offset} -n 10 -e '1/4 "sect1ptr0=%u; " 1/2 "tmp=%u; " 1/4 "sect1ptr1=%u;"' ${partition});
+
+  else
+     # Check if bytes 508-509 = "7f00".
+     if [ "${LDLINUX_BSS:1016:4}" = '7f00' ] ; then
+	# Syslinux 3.xx
+	pa_version=3;	 # Syslinux 3.xx patch area
+
+	# Get "boot sector offset" (in sectors) of sector 1 ptr LSW: sect1ptr0
+	eval $(hexdump -v -s 504 -n 4 -e '1/4 "sect1ptr0=%u;"' ${partition});
+     else
+	# Syslinux 4.00 - Syslinux 4.04-pre4.
+	pa_version=4;	 # Syslinux 4.xx patch area
+
+	# Search for offset to sect1ptr0 (only found in Syslinux 4.xx)
+	#   66 b8 xx xx xx xx 66 ba xx xx xx xx bb 00
+	#         [sect1ptr0]       [sect1ptr1]
+	#
+	# Start searching for this hex string after the DOS superblock: byte 0x5a = 90
+	eval $(echo ${LDLINUX_BSS:$((180)):844} \
+		| awk '{ mask_offset=match($0,"66b8........66ba........bb00"); \
 		if (mask_offset == "0") { print "sect1ptr0_offset=0;" } \
 		else { print "sect1ptr0_offset=" (mask_offset -1 ) / 2 + 2 + 90 } }');
 
-  if [ ${sect1ptr0_offset} -ne 0 ] ; then
-     # Syslinux 4.xx
+	if [ ${sect1ptr0_offset} -ne 0 ] ; then
+	   # Syslinux 4.00 - Syslinux 4.04-pre4.
 
-     # Get "boot sector offset" of sector 1 ptr LSW: sect1ptr0
-     # Get "boot sector offset" of sector 1 ptr MSW: sect1ptr1
-     eval $(hexdump -v -s ${sect1ptr0_offset} -n 10 -e '1/4 "sect1ptr0=%u; " 1/2 "tmp=%u; " 1/4 "sect1ptr1=%u;"' ${partition});
-  else
-     # Syslinux 3.xx
-
-     # Check if bytes 508-509 = "7f00"
-     if [ "${LDLINUX_BSS:1016:4}" = '7f00' ] ; then
-	# Get "boot sector offset" of sector 1 ptr LSW: sect1ptr0
-	eval $(hexdump -v -s 504 -n 4 -e '1/4 "sect1ptr0=%u;"' ${partition});
-     else
-	Syslinux_Msg='No confirmation that this is realy a Syslinux boot sector.';
-        return;
+	   # Get "boot sector offset" (in sectors) of sector 1 ptr LSW: sect1ptr0
+	   # Get "boot sector offset" (in sectors) of sector 1 ptr MSW: sect1ptr1
+	   eval $(hexdump -v -s ${sect1ptr0_offset} -n 10 -e '1/4 "sect1ptr0=%u; " 1/2 "tmp=%u; " 1/4 "sect1ptr1=%u;"' ${partition});
+	else
+	   Syslinux_Msg='No evidence that this is realy a Syslinux boot sector.';
+	   return;
+	fi
      fi
   fi
 
   Syslinux_Msg="Syslinux looks at sector ${sect1ptr0} of ${partition} for its second stage.";
 
-  # Start reading 0.5MiB (more than enough) from second sector of the Syslinux bootloader.
+  # Start reading 0.5MiB (more than enough) from second sector of the Syslinux
+  # bootloader (= first sector of ldlinux.sys).
   dd if=${partition} of=${Tmp_Log} skip=${sect1ptr0} count=1000 bs=512 2>> ${Trash};
 
-  # Get second sector of the Syslinux bootloader and convert to hex.
+  # Get second sector of the Syslinux bootloader (= first sector of ldlinux.sys)
+  # and convert to hex.
   LDLINUX_SECTOR2=$(hexdump -v -n 512 -e '/1 "%02x"' ${Tmp_Log});
 
-  # Look for the LDLINUX_MAGIC bytes (8 bytes aligned) in sector 2 of the Syslinux bootloader.
+  # Look for LDLINUX_MAGIC (8 bytes aligned) in sector 2 of the Syslinux bootloader.
   for (( magic_offset = $((0x10)); magic_offset < $((0x50)); magic_offset = magic_offset + 8 )); do
-    if [ "${LDLINUX_SECTOR2:$(( ${magic_offset} * 2 )):8}" = 'fe02b23e' ] ; then
+    if [ "${LDLINUX_SECTOR2:$(( ${magic_offset} * 2 )):8}" = ${LDLINUX_MAGIC} ] ; then
 
-       # Patch area size: 4+4+2+2+4+4+2+2 = 4*4 + 4*2 = 24 bytes
-       pa_size='24';
-       
-       # Get pa_magic, pa_instance, pa_data_sectors, pa_adv_sectors, pa_dwords, pa_checksum, pa_maxtransfer and pa_epaoffset.
-       pa_hexdump_format='1/4 "pa_magic=0x%04x; " 1/4 "pa_instance=0x%04x; " 1/2 "pa_data_sectors=%u; " 1/2 "pa_adv_sectors=%u; " 1/4 "pa_dwords=0x%04x; " 1/4 "pa_checksum=0x%04x; " 1/2 "pa_maxtransfer=%u; " 1/2 "pa_epaoffset=%u;"';
-       
-       eval $(hexdump -v -s ${magic_offset} -n ${pa_size} -e "${pa_hexdump_format}" ${Tmp_Log});
+       if [ ${pa_version} -eq 4 ] ; then
+	  # Syslinux 4.xx patch area.
+
+	  # Patch area size: 4+4+2+2+4+4+2+2 = 4*4 + 4*2 = 24 bytes
+	  pa_size='24';
+
+	  # Get pa_magic, pa_instance, pa_data_sectors, pa_adv_sectors, pa_dwords, pa_checksum, pa_maxtransfer and pa_epaoffset.
+	  pa_hexdump_format='1/4 "pa_magic=0x%04x; " 1/4 "pa_instance=0x%04x; " 1/2 "pa_data_sectors=%u; " 1/2 "pa_adv_sectors=%u; " 1/4 "pa_dwords=0x%u; " 1/4 "pa_checksum=0x%04x; " 1/2 "pa_maxtransfer=%u; " 1/2 "pa_epaoffset=%u;"';
+
+	  eval $(hexdump -v -s ${magic_offset} -n ${pa_size} -e "${pa_hexdump_format}" ${Tmp_Log});
+
+       else
+	  # Syslinux 3.xx patch area.
+
+	  # Patch area size: 4+4+2+2+4+4 = 4*4 + 2*2 = 20 bytes
+	  pa_size='20';
+
+	  # Get pa_magic, pa_instance, pa_dwords, pa_ldl_sectors and pa_checksum.
+	  #  - pa_dwords:	Total dwords starting at ldlinux_sys not including ADVs.
+	  #  - pa_ldl_sectors:	Number of sectors - (bootsec + sector2) but including any ADVs.
+	  pa_hexdump_format='1/4 "pa_magic=0x%04x; " 1/4 "pa_instance=0x%04x; " 1/2 "pa_dwords=%u; " 1/2 "pa_ldl_sectors=%u; " 1/4 "pa_checksum=0x%04x; " 1/4 "pa_dir_inode=%u;"';
+
+	  eval $(hexdump -v -s ${magic_offset} -n ${pa_size} -e "${pa_hexdump_format}" ${Tmp_Log});
+
+	  # Calulate pa_data_sectors: number of sectors (not including ldlinux.bss = first sector of Syslinux).
+	  #  - divide by 128 (128 dwords / 512 byte sector)
+	  pa_data_sectors=$(( ${pa_dwords} / 128 ));
+
+	  # If total dwords is not exactly a multiple of 128, round up the number of sectors (add 1).
+	  if [ $(( ${pa_dwords}%128 )) -ne 0 ] ; then
+	     pa_data_sectors=$(( ${pa_data_sectors} + 1 ));
+	  fi
 
 
-       # Check integrity of Syslinux.
-       if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} | awk 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
+	  # Some Syslinux 4.00-pre?? releases are different:
+	  #  - have Syslinux 3.xx signature: bytes 508-509 = "7f00".
+	  #  - have the "boot sector offset" (in sectors) of sector 1 ptr LSW (bytes 504-507)
+	  #    for sect1ptr0, like Syslinux 3.xx.
+	  #  - have like Syslinux 4.xx, the same location for pa_data_sectors.
+	  #
+	  # If pa_dwords is less than 1024, it contains the value of pa_data_sectors:
+	  #  - if less and pa_words would really be pa_words:		ldlinux.sys would be smaller than 4 kiB
+	  #  - if more and pa_words would really be pa_data_sectors:	ldlinux.sys would be more than 500 kiB
+
+	  if [ ${pa_dwords} -lt 1024 ] ; then
+	     pa_data_sectors=${pa_dwords};
+	  fi
+
+       fi       
+
+
+       # Check integrity of Syslinux:
+       #  - Checksum starting at ldlinux.sys, stopping before the ADV part.
+       #  - checksum start = LDLINUX_MAGIC - [sum of dwords].
+       #  - add each dword to the checksum value.
+       #  - the value of the checksum after adding all dwords of ldlinux.sys should be 0.
+
+       if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
+	    | awk 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
+
 	  Syslinux_Msg="${Syslinux_Msg} Integrity check of Syslinux failed.";
 	  return;
        fi
-       
-
-       # Extended patch area size: 10*2 = 20 bytes
-       epa_size='20';
-
-       # Get epa_advptroffset, epa_diroffset, epa_dirlen, epa_subvoloffset, epa_subvollen,
-       # epa_secptroffset, epa_secptrcnt, epa_sect1ptr0, epa_sect1ptr1 and epa_raidpatch.
-       epa_hexdump_format='1/2 "epa_advptroffset=%u; " 1/2 "epa_diroffset=%u; " 1/2 "epa_dirlen=%u; " 1/2 "epa_subvoloffset=%u; " 1/2 "epa_subvollen=%u; " 1/2 "epa_secptroffset=%u; " 1/2 "epa_secptrcnt=%u; " 1/2 "epa_sect1ptr0=%u; " 1/2 "epa_sect1ptr1=%u; " 1/2 "epa_raidpatch=%u;"';
-
-       eval $(hexdump -v -s ${pa_epaoffset} -n ${epa_size} -e "${epa_hexdump_format}" ${Tmp_Log});
 
 
-       # Get "SYSLINUX - version - date" string
+       # Get "SYSLINUX - version - date" string.
        syslinux_version=$(hexdump -v -e '"%_p"' -s 2 -n $(( ${magic_offset} - 2 )) ${Tmp_Log});
        syslinux_version="${syslinux_version% \.*}";
 
@@ -1282,16 +1346,21 @@ syslinux_info () {
        BST="${syslinux_version}";
 
 
-       # Check if the allowed directory lenght is 256 bytes.
-       # This is just a sanity check, so we can be pretty sure that we have
-       # used the right extended patch area structure.
-       if [ ${epa_dirlen} -eq 256 ] ; then
+       if [ ${pa_version} -eq 4 ] ; then
+	  # Extended patch area size: 10*2 = 20 bytes
+	  epa_size='20';
+
+	  # Get epa_advptroffset, epa_diroffset, epa_dirlen, epa_subvoloffset, epa_subvollen,
+	  # epa_secptroffset, epa_secptrcnt, epa_sect1ptr0, epa_sect1ptr1 and epa_raidpatch.
+	  epa_hexdump_format='1/2 "epa_advptroffset=%u; " 1/2 "epa_diroffset=%u; " 1/2 "epa_dirlen=%u; " 1/2 "epa_subvoloffset=%u; " 1/2 "epa_subvollen=%u; " 1/2 "epa_secptroffset=%u; " 1/2 "epa_secptrcnt=%u; " 1/2 "epa_sect1ptr0=%u; " 1/2 "epa_sect1ptr1=%u; " 1/2 "epa_raidpatch=%u;"';
+
+	  eval $(hexdump -v -s ${pa_epaoffset} -n ${epa_size} -e "${epa_hexdump_format}" ${Tmp_Log});
+
 	  # Get the Syslinux install directory.
 	  syslinux_dir=$(hexdump -v  -e '"%_p"' -s ${epa_diroffset} -n ${epa_dirlen} ${Tmp_Log});
 	  syslinux_dir=${syslinux_dir%%\.*};
 
-          Syslinux_Msg="${Syslinux_Msg} ${syslinux_version:0:8} is installed in the ${syslinux_dir} directory.";
-          return;
+	  Syslinux_Msg="${Syslinux_Msg} ${syslinux_version:0:8} is installed in the ${syslinux_dir} directory.";
        fi
 
        return;
@@ -1299,7 +1368,7 @@ syslinux_info () {
   done
 
   # LDLINUX_MAGIC not found.
-  Syslinux_Msg="${Syslinux_Msg} It is very unlikely that Syslinux is installed and working (magic bytes could not be found).";
+  Syslinux_Msg="${Syslinux_Msg} It is very unlikely that Syslinux is (still) installed. The second stage could not be found.";
 
 }
 
