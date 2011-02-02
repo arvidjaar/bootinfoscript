@@ -552,8 +552,10 @@ fdisks () {
 
 ##  A function which checks whether a file is on a mounted partition. ##
 
-# list of mountpoints for devices:  also allow mount points with spaces.
+# list of mountpoints for devices: also allow mount points with spaces.
+
 MountPoints=$(mount | awk -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
+
 
 FileNotMounted () {	
   local File=$1 curmp=$2;
@@ -885,7 +887,7 @@ BlkidTag () {
 
 
 PrintBlkid () {
-  local part=$1 suffix=$2
+  local part=$1 suffix=$2;
 
   if [ x"$(blkid ${part} 2> ${Tmp_Log})" != x'' ] ; then
      printf "${BlkidFormat}" "${part}" "$(BlkidTag ${part} UUID)" "$(BlkidTag ${part} TYPE)" "$(BlkidTag ${part} LABEL)" >> ${BLKID}${suffix};
