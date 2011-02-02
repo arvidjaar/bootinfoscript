@@ -212,6 +212,7 @@ Programs='
 	basename
 	blkid
 	cat
+	chown
 	dd
 	dirname
 	expr
@@ -225,12 +226,13 @@ Programs='
 	ls
 	mkdir
 	mount
+	printf
 	pwd
 	rm
 	sed
 	sort
-	unlzma
 	umount
+	unlzma
 	wc
 	whoami'
 
