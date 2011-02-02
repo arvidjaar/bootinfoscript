@@ -1556,12 +1556,19 @@ last_block_of_file () {
 		   } \
 		} } END { \
 			if ( filefrag_old == "true" ) { \
+				bogus = last_block; \
 				EndByte = last_block * blocksize + 512 * '${start}'; \
-				print "BlockSize=" blocksize "; EndGiByte=" EndByte / 1024 ^ 3 "; EndGByte=" EndByte / 1000 ^ 3 "; Filefrag_Old=" filefrag_old ";" \
+				printf "BlockSize=" blocksize "; Filefrag_Old=" filefrag_old "; " \
 			} else { \
+				bogus = last_ext_loc; \
 				EndByte = ( last_ext_loc + ext_length ) * blocksize + 512 * '${start}'; \
-				print "BlockSize=" blocksize "; Fragments=" extents "; EndGiByte=" EndByte / 1024 ^ 3 "; EndGByte=" EndByte / 1000 ^ 3 "; Filefrag_Old=" filefrag_old ";" \
-			}\
+				printf "BlockSize=" blocksize "; Fragments=" extents "; Filefrag_Old=" filefrag_old "; " \
+			} \
+			if ( ( bogus == 0) || ( extents == 0 ) ) { \
+				printf "EndGiByte=??; EndGByte=??;" \
+			} else { \
+				printf "EndGiByte=" EndByte / 1024 ^ 3 "; EndGByte=" EndByte / 1000 ^ 3 ";" \
+			} \
 		}');
 
        if [ "${BlockSize}" -ne 0 ] ; then
@@ -1570,14 +1577,7 @@ last_block_of_file () {
 	     printf "%12s / %-11s :  %s\n" "${EndGiByte} GiB" "${EndGByte} GB" "${file}" >> ${Tmp_Log};
 	  else
 	     # New version of filefrag.
-
-	     # If number of Fragments is 0, the values in EndGiByte and EndGByte are bogus too.
-	     if [ "${Fragments}" -eq 0 ] ; then
-		EndGiByte='??';
-		EndGByte='??';
-	     fi
-
-	     printf "%12s / %-11s :  %-35s %s fragments(s)\n" "${EndGiByte} GiB" "${EndGByte} GB" "${file}" "${Fragments}" >> ${Tmp_Log};
+	     printf "%12s / %-11s :  %-36s %s fragment(s)\n" "${EndGiByte} GiB" "${EndGByte} GB" "${file}" "${Fragments}" >> ${Tmp_Log};
 	  fi
        fi
 
