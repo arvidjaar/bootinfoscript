@@ -2320,7 +2320,7 @@ for HI in ${!HDName[@]} ; do
 	  case ${MBR_sig3} in
 	    33c08e) BL='Windows';;
 	    33c090) BL='DiskCryptor';;
-	    33c0fa) BL='Syslinux';;
+	    33c0fa) BL='Syslinux MBR';;
 	  esac;;
     33ed) BL='ISOhybrid (Syslinux)';;
     33ff) BL='HP/Gateway';;
@@ -2337,7 +2337,7 @@ for HI in ${!HDName[@]} ; do
 	  esac;;
     fa31) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig3} in
-	    fa31c0) BL='Syslinux';;
+	    fa31c0) BL='Syslinux MBR';;
 	    fa31c9) BL='Master Boot LoaDeR';;   
 	  esac;;
     fa33) BL='MS-DOS 3.30 through Windows 95 (A)';;
