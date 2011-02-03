@@ -1508,6 +1508,35 @@ core_loc () {
 
 
 
+## Get embedded menu for grub4dos (grldr/grub.exe) and wee (installed in the MBR). ##
+#
+#   Function arguments:
+#
+#   - arg 1:  source     = file (grub4dos) / device (WEE)
+#   - arg 2:  titlename  = first part of the title that needs to be displayed
+#
+
+get_embedded_menu () {
+  local source=$1 titlename=$2;
+
+  # Check if magic bytes that go before the embedded menu, are present.
+  offset_menu=$(dd if="${source}" count=4 bs=128k 2>> ${Trash} | hexdump -v -e '/1 "%02x"' | grep -b -o 'b0021ace000000000000000000000000');
+
+  if [ -n ${offset_menu} ] ; then
+     # Magic found.
+     titlebar_gen "${titlename}" " embedded menu";
+     echo '--------------------------------------------------------------------------------' >> "${Log1}";
+
+     # Calcutate the exact offset to the embedded menu.
+     offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
+     dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | awk -F '\0' '{print $1}' >> "${Log1}";
+
+     echo '--------------------------------------------------------------------------------' >> "${Log1}";
+  fi
+}
+
+
+
 ## Show the location (offset) of a file on a disk ##
 #
 #   Function arguments:
@@ -1942,21 +1971,7 @@ Get_Partition_Info() {
 
 		if ( [ ${file} = '/grldr' ] || [ ${file} = '/grub.exe' ] ) ; then
 		   # Display the embedded menu of grub4dos.
-
-		   # Check if magic bytes that go before the embedded menu, are present.
-		   offset_menu=$(hexdump -v -e '/1 "%02x"' "${mountname}${file}" | grep -b -o 'b0021ace000000000000000000000000');
-
-		   if [ -n ${offset_menu} ] ; then
-		      # Magic found.
-		      titlebar_gen "${name}" "${file} embedded menu";
-		      echo '--------------------------------------------------------------------------------' >> "${Log1}";
-
-		      # Calcutate the exact offset to the embedded menu.
-		      offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
-		      dd if="${mountname}${file}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | awk -F '\0' '{print $1}' >> "${Log1}";
-
-		      echo '--------------------------------------------------------------------------------' >> "${Log1}";
-		   fi
+		   get_embedded_menu "${mountname}${file}" "${name}${file}";
 		else
 		   titlebar_gen "${name}" ${file};			# Generates a titlebar above each file listed.
 		   echo '--------------------------------------------------------------------------------' >> "${Log1}";
@@ -2356,7 +2371,9 @@ for HI in ${!HDName[@]} ; do
 	  case ${MBR_sig3} in
 	    eb5e00) BL='fbinst';;
 	    eb5e80) BL='Grub4Dos';;
-	    eb5e90) BL='WEE';;
+	    eb5e90) BL='WEE';
+		    # Get the embedded menu of WEE.
+		    get_embedded_menu "${drive}" "WEE's (${drive})";;
 	  esac;;
     fa31) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig3} in
