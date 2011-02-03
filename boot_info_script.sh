@@ -1640,7 +1640,7 @@ last_block_of_file () {
 Get_Partition_Info() {
   local Log="$1" Log1="$2" part="$3" name="$4" mountname="$5"  kind="$6"  start="$7"  end="$8" system="$9" PI="${10}";
   local size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
-  local offset_menu part_no_mount=0;
+  local offset_menu='' part_no_mount=0 com32='' com32_version='';
 
 
   echo "Searching ${name} for information... ";
@@ -2094,6 +2094,33 @@ Get_Partition_Info() {
 	   titlebar_gen "${name}" ': Location of files loaded by Syslinux';
 	   cat ${Tmp_Log} >> "${Log1}";
 	fi
+
+
+
+	rm -f ${Tmp_Log};
+
+	# Display the version of the COM32(R) modules of Syslinux.
+
+	for com32 in *.c32 syslinux/*.c32 extlinux/*.c32 boot/syslinux/*.c32 boot/extlinux/*.c32 ; do
+
+	  if [ -f "${com32}" ] ; then
+	     # First 5 bytes of the COM32(R) module are a magic number (used by Syslinux too).
+	     com32_version=$(hexdump -n 5 -e '/1 "%02x"' "${com32}");
+
+	     case ${com32_version} in
+		b8fe4ccd21)  printf ' %-35s:  COM32R module (v4.xx)\n' "${com32}" >> ${Tmp_Log};;
+		b8ff4ccd21)  printf ' %-35s:  COM32R module (v3.xx)\n' "${com32}" >> ${Tmp_Log};;
+			 *)  printf ' %-35s:  not a COM32/COM32R module\n' "${com32}" >> ${Tmp_Log};;
+	     esac
+	  fi
+	done
+
+	if [ -f ${Tmp_Log} ] ; then
+	   titlebar_gen "${name}" ': Version of COM32(R) files used by Syslinux';
+	   cat ${Tmp_Log} >> "${Log1}";
+	fi
+
+
 
 	cd "${Folder}";
 
