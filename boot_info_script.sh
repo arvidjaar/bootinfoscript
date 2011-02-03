@@ -343,6 +343,7 @@ Boot_Files_Normal='
 	/etc/lilo.conf	/lilo.conf
 	/syslinux.cfg	/syslinux/syslinux.cfg	/boot/syslinux/syslinux.cfg
 	/extlinux.conf	/extlinux/extlinux.conf	/boot/extlinux/extlinux.conf
+	/grldr		/grub.exe
 	'
 
 Boot_Files_Fat='
@@ -356,6 +357,7 @@ Boot_Files_Fat='
 	/etc/lilo.conf	/lilo.conf
 	/syslinux.cfg	/syslinux/syslinux.cfg	/boot/syslinux/syslinux.cfg
 	/extlinux.conf	/extlinux/extlinux.conf	/boot/extlinux/extlinux.conf
+	/grldr		/grub.exe
 	'
 
 
@@ -1608,7 +1610,8 @@ last_block_of_file () {
 
 Get_Partition_Info() {
   local Log="$1" Log1="$2" part="$3" name="$4" mountname="$5"  kind="$6"  start="$7"  end="$8" system="$9" PI="${10}";
-  local size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='' part_no_mount=0;
+  local size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
+  local offset_menu part_no_mount=0;
 
 
   echo "Searching ${name} for information... ";
@@ -1936,10 +1939,30 @@ Get_Partition_Info() {
 	     # Check whether the file is a symlink.
 	     if ! [ -h "${mountname}${file}" ] ; then
 		# if not a symlink, display content.
-		titlebar_gen "${name}" $file;	# Generates a titlebar above each file listed.
-		echo '--------------------------------------------------------------------------------' >> "${Log1}";
-		cat "${mountname}${file}"  >> "${Log1}";
-		echo '--------------------------------------------------------------------------------' >> "${Log1}"; 
+
+		if ( [ ${file} = '/grldr' ] || [ ${file} = '/grub.exe' ] ) ; then
+		   # Display the embedded menu of grub4dos.
+
+		   # Check if magic bytes that go before the embedded menu, are present.
+		   offset_menu=$(hexdump -v -e '/1 "%02x"' "${mountname}${file}" | grep -b -o 'b0021ace000000000000000000000000');
+
+		   if [ -n ${offset_menu} ] ; then
+		      # Magic found.
+		      titlebar_gen "${name}" "${file} embedded menu";
+		      echo '--------------------------------------------------------------------------------' >> "${Log1}";
+
+		      # Calcutate the exact offset to the embedded menu.
+		      offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
+		      dd if="${mountname}${file}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | awk -F '\0' '{print $1}' >> "${Log1}";
+
+		      echo '--------------------------------------------------------------------------------' >> "${Log1}";
+		   fi
+		else
+		   titlebar_gen "${name}" ${file};			# Generates a titlebar above each file listed.
+		   echo '--------------------------------------------------------------------------------' >> "${Log1}";
+		   cat "${mountname}${file}"  >> "${Log1}";
+		   echo '--------------------------------------------------------------------------------' >> "${Log1}";
+		fi
 	     fi
 	  fi
 	done
