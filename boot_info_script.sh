@@ -878,7 +878,7 @@ Read8Bytes () {
 
 ## Functions to pretty print blkid output. ##
 
-BlkidFormat='%-16s %-38s %-10s %-30s\n';
+BlkidFormat='%-16s %-38s %-10s %s\n';
 
 BlkidTag () {
   echo $(blkid -s $2 -o value $1 2>> ${Trash});
