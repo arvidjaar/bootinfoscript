@@ -2690,13 +2690,14 @@ mount | sort | awk -F "\t" '$0 ~ "^/dev" \
 ## Write the content of Log1 to the log file. ##
 
 [ -e "${Log1}" ] && cat "${Log1}" >> "${Log}"; 
+echo >> "${Log}";
 
 
 
 ## Add unknown MBRs/Boot Sectors to the log file, if any. ##
 
 if [ -e ${Unknown_MBR} ] ; then
-   printf '\n======================== Unknown MBRs/Boot Sectors/etc: ========================\n\n' >> "${Log}";
+   printf '======================== Unknown MBRs/Boot Sectors/etc: ========================\n\n' >> "${Log}";
    cat ${Unknown_MBR} >> "${Log}";
    echo >> "${Log}";
 fi
