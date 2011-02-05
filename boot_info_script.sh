@@ -1025,7 +1025,7 @@ ReadEFI () {
   drive="${HDName[${HI}]}";
   format='%-10s %14s%14s%14s %s\n';
 
-  printf "${format}" Partition Start End Size System >> ${GPT_file};
+  printf "${format}" 'Partition' 'Start Sector' 'End Sector' '# of Sectors' 'System' >> ${GPT_file};
 
   HDStart[${HI}]=$( Read8Bytes 552 ${drive});
   HDEnd[${HI}]=$(   Read8Bytes 560 ${drive});
@@ -1080,7 +1080,7 @@ ReadEMBR () {
   drive="${HDName[${HI}]}";
   format='%-18s %4s%14s%14s%14s %3s %-15s %3s %2s\n';
 
-  printf "${format}" Partition Boot Start End Size Id System Ind '?' >> ${MPT_file};
+  printf "${format}" 'Partition' 'Boot' 'Start Sector' 'End Sector' '# of Sectors' 'Id' 'System' 'Ind' '?' >> ${MPT_file};
 
   N=$(hexdump -v -s 534 -n 1 -e '"%u"' ${drive});
 
@@ -2452,7 +2452,7 @@ for HI in ${!HDName[@]} ; do
   echo "Drive: $(basename ${drive} ) _____________________________________________________________________" >> ${PartitionTable};
   fdisk -lu ${drive} 2>> ${Trash} | sed '/omitting/ d' | sed '6,$ d' >> ${PartitionTable};
 
-  printf "\n${PTFormat}\n" 'Partition' 'Boot' 'Start' 'End' 'Size' 'Id' 'System' >> ${PartitionTable};
+  printf "\n${PTFormat}\n" 'Partition' 'Boot' 'Start Sector' 'End Sector' '# of Sectors' 'Id' 'System' >> ${PartitionTable};
 
   ReadPT ${HI} 0 4 ${PartitionTable} "${PTFormat}" '' 0;
   
