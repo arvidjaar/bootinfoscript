@@ -1737,6 +1737,7 @@ Get_Partition_Info() {
 	e2f7) BST='FAT32, Non Bootable';;
 	e879) BST='ISOhybrid (Syslinux 3.74-3.80)';;
 	e9d8) BST='Windows Vista/7';;
+	f6f6) BST='- (cleared BS by FDISK)';;
 	fa33) BST='Windows XP';;
 	fbc0) BST='ISOhybrid (Syslinux 3.81)';;
 
