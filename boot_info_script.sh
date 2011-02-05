@@ -1598,17 +1598,17 @@ last_block_of_file () {
 			if ( ( bogus == 0) || ( extents == 0 ) ) { \
 				printf "EndGiByte=??; EndGByte=??;" \
 			} else { \
-				printf "EndGiByte=" EndByte / 1024 ^ 3 "; EndGByte=" EndByte / 1000 ^ 3 ";" \
+				printf "EndGiByte=%.6f; EndGByte=%.6f;", EndByte / 1024 ^ 3, EndByte / 1000 ^ 3; \
 			} \
 		}');
 
        if [ "${BlockSize}" -ne 0 ] ; then
 	  if [ "${Filefrag_Old}" = "true" ] ; then
 	     # Old version of filefrag.
-	     printf "%12s / %-11s :  %s\n" "${EndGiByte} GiB" "${EndGByte} GB" "${file}" >> ${Tmp_Log};
+	     printf "%1.8s GiB / %-1.8s GB :  %s\n" "${EndGiByte}" "${EndGByte}" "${file}" >> ${Tmp_Log};
 	  else
 	     # New version of filefrag.
-	     printf "%12s / %-11s :  %-36s %s fragment(s)\n" "${EndGiByte} GiB" "${EndGByte} GB" "${file}" "${Fragments}" >> ${Tmp_Log};
+	     printf "%1.8s GiB / %-1.8s GB :  %-36s %s fragment(s)\n" "${EndGiByte}" "${EndGByte}" "${file}" "${Fragments}" >> ${Tmp_Log};
 	  fi
        fi
 
