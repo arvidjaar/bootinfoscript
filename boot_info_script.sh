@@ -1464,6 +1464,7 @@ core_loc () {
   case "${grub2_version}" in
     1.96) offset_loc='68';  dr_loc='76'; dir_loc='32';;
     1.97) offset_loc='92';  dr_loc='91'; dir_loc='28';;
+    1.99) offset_loc='92';  dr_loc='91'; dir_loc='28';;
   esac
 
   offset=$(hexdump -v -s ${offset_loc} -n 4 -e '4 "%u"' "${stage1}" 2>> ${Trash});
@@ -1745,8 +1746,11 @@ Get_Partition_Info() {
 	48b4) BST='Grub 1.96';    
 	      core_loc ${part} '1.96';
 	      BSI="${BSI} Grub 1.96 is installed in the boot sector of ${name} and ${Core_Msg}";;
-	7c3c) BST='Grub 2';    
+	7c3c) BST='Grub 1.97 - 1.98';    
 	      core_loc ${part} '1.97';
+	      BSI="${BSI} Grub 2 is installed in the boot sector of ${name} and ${Core_Msg}";;
+	0020) BST='Grub 1.99';
+	      core_loc ${part} '1.99';
 	      BSI="${BSI} Grub 2 is installed in the boot sector of ${name} and ${Core_Msg}";;
  aa75 | 5272) BST='Grub';
 	      stage2_loc ${part};
