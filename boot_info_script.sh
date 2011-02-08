@@ -254,7 +254,6 @@ printf '\nboot_info_script version: %s        [%s]\n\n' "${VERSION}" "${DATE}";
 ## Check if all necessary programs are available. ##
 
 Programs='
-	awk
 	basename
 	blkid
 	cat
@@ -265,6 +264,7 @@ Programs='
 	fdisk
 	filefrag
 	fold
+	gawk
 	grep
 	gzip
 	hexdump
@@ -584,7 +584,7 @@ if type dmraid >> ${Trash} 2>> ${Trash} ; then
   fi
 
   if [ x"$(dmraid -sa -c)" != x"no raid disks" ] ; then
-     All_DMRaid=$(dmraid -sa -c | awk '{ print "/dev/mapper/"$0 }');
+     All_DMRaid=$(dmraid -sa -c | gawk '{ print "/dev/mapper/"$0 }');
      All_Hard_Drives="${All_Hard_Drives} ${All_DMRaid}";
   fi  
 fi
@@ -635,7 +635,7 @@ fdisks () {
 
 # list of mountpoints for devices: also allow mount points with spaces.
 
-MountPoints=$(mount | awk -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
+MountPoints=$(mount | gawk -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
 
 
 FileNotMounted () {	
@@ -830,11 +830,11 @@ HexToSystem () {
 #
 #    - Then run the following:
 #
-#	 awk -F '\t' '{ GUID=tolower($2); printf "    %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s)  system=\"%s\";;\n", substr(GUID,7,1), substr(GUID,8,1), substr(GUID,5,1), substr(GUID,6,1), substr(GUID,3,1), substr(GUID,4,1), substr(GUID,1,1), substr(GUID,2,1), substr(GUID,12,1), substr(GUID,13,1), substr(GUID,10,1), substr(GUID,11,1), substr(GUID,17,1), substr(GUID,18,1), substr(GUID,15,1), substr(GUID,16,1), substr(GUID,20,4), substr(GUID,25,12), $1 } END { print "				   *)  system='-';" }' Partition_type_GUIDs.txt
+#	 gawk -F '\t' '{ GUID=tolower($2); printf "    %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s)  system=\"%s\";;\n", substr(GUID,7,1), substr(GUID,8,1), substr(GUID,5,1), substr(GUID,6,1), substr(GUID,3,1), substr(GUID,4,1), substr(GUID,1,1), substr(GUID,2,1), substr(GUID,12,1), substr(GUID,13,1), substr(GUID,10,1), substr(GUID,11,1), substr(GUID,17,1), substr(GUID,18,1), substr(GUID,15,1), substr(GUID,16,1), substr(GUID,20,4), substr(GUID,25,12), $1 } END { print "				   *)  system='-';" }' Partition_type_GUIDs.txt
 #
 #    - Some GUIDs are not unique for one OS. To find them, you can run:
 #
-#	 awk -F "\t" '{print $2}' GUID_Partition_Table_list.txt | sort | uniq -d | grep -f - GUID_Partition_Table_list.txt
+#	 gawk -F "\t" '{print $2}' GUID_Partition_Table_list.txt | sort | uniq -d | grep -f - GUID_Partition_Table_list.txt
 #
 #		Basic data partition (Windows)	EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
 #		Data partition (Linux)		EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
@@ -1335,7 +1335,7 @@ syslinux_info () {
 	#
 	# Start searching for this hex string after the DOS superblock: byte 0x5a = 90
 	eval $(echo ${LDLINUX_BSS:$((180)):844} \
-		| awk '{ mask_offset=match($0,"66b8........66ba........bb00"); \
+		| gawk '{ mask_offset=match($0,"66b8........66ba........bb00"); \
 		if (mask_offset == "0") { print "sect1ptr0_offset=0;" } \
 		else { print "sect1ptr0_offset=" (mask_offset -1 ) / 2 + 2 + 90 } }');
 
@@ -1424,7 +1424,7 @@ syslinux_info () {
        #  - the value of the checksum after adding all dwords of ldlinux.sys should be 0.
 
        if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
-	    | awk 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
+	    | gawk 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
 
 	  Syslinux_Msg="${Syslinux_Msg} Integrity check of Syslinux failed.";
 	  return;
@@ -1609,7 +1609,7 @@ get_embedded_menu () {
 
      # Calcutate the exact offset to the embedded menu.
      offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
-     dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | awk -F '\0' '{print $1}' >> "${Log1}";
+     dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | gawk -F '\0' '{print $1}' >> "${Log1}";
 
      echo '--------------------------------------------------------------------------------' >> "${Log1}";
   fi
@@ -1643,7 +1643,7 @@ last_block_of_file () {
        # For the newer version, we can also get the number of file fragments.
 
        eval $(filefrag -v "${file}" \
-	     | awk -F ' ' 'BEGIN { blocksize=0; expected=0; extents=1; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_old="false"; last_block=0 } \
+	     | gawk -F ' ' 'BEGIN { blocksize=0; expected=0; extents=1; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_old="false"; last_block=0 } \
 		{ if ( $1 == "Blocksize" ) { blocksize=$6; filefrag_old="true" }; \
 		if ( filefrag_old == "true" ) { \
 			if ( $1$2 ~ "LastBlock:" ) { print $3 }; \
@@ -1998,7 +1998,7 @@ Get_Partition_Info() {
   esac
 
   if [ "${part_no_mount}" -eq 0 ] && [ "${system}" != 'Bios Boot Partition' ] ; then
-     CheckMount=$(mount | awk -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
+     CheckMount=$(mount | gawk -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
 
      # Check whether partition is already mounted.
      if [ x"${CheckMount}" != x'' ] ; then 
@@ -2071,7 +2071,7 @@ Get_Partition_Info() {
 	## Search for Wubi partitions. ##
 
 	if [ -f "${mountname}/ubuntu/disks/root.disk" ] ; then          
-	   Wubi=$(losetup -a | awk '$3 ~ "(/host/ubuntu/disks/root.disk)" { print $1; exit }' | sed 's/.$//' );
+	   Wubi=$(losetup -a | gawk '$3 ~ "(/host/ubuntu/disks/root.disk)" { print $1; exit }' | sed 's/.$//' );
 
 	   # check whether Wubi already has a loop device.
 	   if [[ x"${Wubi}" = x'' ]] ; then
@@ -2309,7 +2309,7 @@ for drive in ${All_Hard_Drives} ; do
 	HDSize[${HI}]=${size};
 
 	# Get and set HDHead[${HI}], HDTrack[${HI}] and HDCylinder[${HI}] all at once.
-	eval $(fdisk -lu ${drive} 2>> ${Trash} | awk -F ' ' '$2 ~ "head" { print "HDHead['${HI}']=" $1 "; HDTrack['${HI}']=" $3 "; HDCylinder['${HI}']=" $5 }' );
+	eval $(fdisk -lu ${drive} 2>> ${Trash} | gawk -F ' ' '$2 ~ "head" { print "HDHead['${HI}']=" $1 "; HDTrack['${HI}']=" $3 "; HDCylinder['${HI}']=" $5 }' );
 
 	# Look at the first 4 bytes of the second sector to identify the partition table type.
 	case $(hexdump -v -s 512 -n 4 -e '"%_u"' ${drive}) in
@@ -2368,7 +2368,7 @@ for HI in ${!HDName[@]} ; do
 	     tmp="/${Grub_String#*/}";
 	     tmp="${tmp%%nul*}";
 
-	     eval $(echo ${tmp} | awk '{ print "stage=" $1 "; menu=" $2 }');
+	     eval $(echo ${tmp} | gawk '{ print "stage=" $1 "; menu=" $2 }');
 
 	     [[ x"$menu" = x'' ]] || stage="${stage} and ${menu}";
 
@@ -2435,7 +2435,7 @@ for HI in ${!HDName[@]} ; do
 
 	     # Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
 	     eval $(hexdump -v -s 512 -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${drive} | \
-		   awk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
+		   gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 + 512 } }');
 
 	     if [ ${offset_lzma} -ne 0 ] ; then
@@ -2631,11 +2631,11 @@ fi
 
 if type lvscan >> ${Trash} 2>> ${Trash} && type lvdisplay >> ${Trash} 2>> ${Trash} && type lvchange >> ${Trash} 2>> ${Trash} ; then
    
-  LVM_Partitions=$(lvscan | awk '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
+  LVM_Partitions=$(lvscan | gawk '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
 
   for LVM in ${LVM_Partitions}; do 
-    LVM_Size=$(lvdisplay -c ${LVM} | awk -F ':' '{ print $7 }');
-    LVM_Status=$(lvdisplay ${LVM} | awk '$0 ~ "LV Status" { print $3 }');
+    LVM_Size=$(lvdisplay -c ${LVM} | gawk -F ':' '{ print $7 }');
+    LVM_Status=$(lvdisplay ${LVM} | gawk '$0 ~ "LV Status" { print $3 }');
     lvchange -ay ${LVM};
     name=${LVM:12};
     mountname="LVM/${name}";
@@ -2662,13 +2662,13 @@ fi
 if type mdadm >> ${Trash} 2>> ${Trash} ; then
   
   # All arrays which are already assembled.
-  MD_Active_Array=$(mdadm --detail --scan | awk '{ print $2 }');
+  MD_Active_Array=$(mdadm --detail --scan | gawk '{ print $2 }');
 
   # Assemble all arrays.
   mdadm --assemble --scan;
   
   # All arrays.
-  MD_Array=$(mdadm --detail --scan | awk '{ print $2 }');
+  MD_Array=$(mdadm --detail --scan | gawk '{ print $2 }');
 
   for MD in ${MD_Array}; do
     MD_Size=$(fdisks ${MD});     # size in blocks
@@ -2760,11 +2760,11 @@ printf "${MountFormat}\n" 'Device' 'Mount_Point' 'Type' 'Options' >> "${Log}";
 
 # No idea for which mount version this is even needed.
 #  original:
-#    mount | grep ' / '| grep -v '^/'| sed  's/ on /'$Fis'/' |sed 's/ type /'$Fis'/'|sed  's/ (/'$Fis'(/'|awk -F $Fis '{printf "'"$MountFormat"'", $1, $2, $3, $4 }'>>"$Log";
+#    mount | grep ' / '| grep -v '^/'| sed  's/ on /'$Fis'/' |sed 's/ type /'$Fis'/'|sed  's/ (/'$Fis'(/'| gawk -F $Fis '{printf "'"$MountFormat"'", $1, $2, $3, $4 }'>>"$Log";
 #  new:
-#    mount | sort | awk -F "\t" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
+#    mount | sort | gawk -F "\t" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
 
-mount | sort | awk -F "\t" '$0 ~ "^/dev" \
+mount | sort | gawk -F "\t" '$0 ~ "^/dev" \
   { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); \
     printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } END { printf "\n" }' >> "${Log}";
 
