@@ -43,30 +43,30 @@ DATE='8 February 2011';
 #                                                                              #
 #   Run the script as sudoer:                                                  #
 #                                                                              #
-#     sudo bash ./boot_info_script*.sh <outputfile>                            #
+#     sudo bash ./boot_info_script.sh <outputfile>                             #
 #                                                                              #
 #   or if your operating system does not use sudo:                             #
 #                                                                              #
 #     su -                                                                     #
-#     bash ./boot_info_script*.sh <outputfile>                                 #
+#     bash ./boot_info_script.sh <outputfile>                                  #
 #                                                                              #
 #   To get version number and last editing date of this script, use:           #
 #     (no root rights needed)                                                  #
 #                                                                              #
-#     bash ./boot_info_script*.sh -v                                           #
-#     bash ./boot_info_script*.sh -V                                           #
-#     bash ./boot_info_script*.sh --version                                    #
+#     bash ./boot_info_script.sh -v                                            #
+#     bash ./boot_info_script.sh -V                                            #
+#     bash ./boot_info_script.sh --version                                     #
 #                                                                              #
 #   To get help running this script, use (no root rights needed):              #
 #                                                                              #
-#     bash ./boot_info_script*.sh -h                                           #
-#     bash ./boot_info_script*.sh -help                                        #
-#     bash ./boot_info_script*.sh --help                                       #
+#     bash ./boot_info_script.sh -h                                            #
+#     bash ./boot_info_script.sh -help                                         #
+#     bash ./boot_info_script.sh --help                                        #
 #                                                                              #
 #   To automatically gzip a copy of the output file, use (root rights needed): #
 #                                                                              #
-#     bash ./boot_info_script*.sh -g <outputfile>                              #
-#     bash ./boot_info_script*.sh --gzip <outputfile>                          #
+#     bash ./boot_info_script.sh -g <outputfile>                               #
+#     bash ./boot_info_script.sh --gzip <outputfile>                           #
 #                                                                              #
 ################################################################################
 #                                                                              #
@@ -117,9 +117,9 @@ DATE='8 February 2011';
 
 ## Display version and last modification date of the script when asked: ##
 #
-#   bash ./boot_info_script -v
-#   bash ./boot_info_script -V
-#   bash ./boot_info_script --version 
+#   bash ./boot_info_script.sh -v
+#   bash ./boot_info_script.sh -V
+#   bash ./boot_info_script.sh --version 
 
 version () {
   printf '\nboot_info_script version: %s\nLast modification date:   %s\n\n' "${VERSION}" "${DATE}";
@@ -130,9 +130,9 @@ version () {
 
 ## Display help text ##
 #
-#   bash ./boot_info_script -h
-#   bash ./boot_info_script -help
-#   bash ./boot_info_script --help
+#   bash ./boot_info_script.sh -h
+#   bash ./boot_info_script.sh -help
+#   bash ./boot_info_script.sh --help
  
 help () {
    echo '';
@@ -2743,8 +2743,8 @@ fi
 #
 #   gzip a copy of the RESULTS file only when -g or --gzip is passed on the command line.
 #
-#   bash ./boot_info_script -g <outputfile> 
-#   bash ./boot_info_script --gzip <outputfile> 
+#   bash ./boot_info_script.sh -g <outputfile> 
+#   bash ./boot_info_script.sh --gzip <outputfile> 
 
 if [ ${gzip_output} -eq 1 ] ; then
    cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
