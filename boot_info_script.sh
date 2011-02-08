@@ -284,7 +284,7 @@ fi
 
 
 
-## Check if there are other boot_info_script.sh files in the same directory ##
+## Check if there are other boot_info_script.sh files in the same directory. ##
 #
 #   This can be useful when BIS was downloaded multiple times with Firefox, Chromium, ...
 #   Those browsers will add a suffix to the filename, when there was already
@@ -331,7 +331,7 @@ Boot_Codes_Dir='
 
 
 
-##  List of files whose names will be displayed, if found. ##
+## List of files whose names will be displayed, if found. ##
 
 Boot_Prog_Normal='
 	/bootmgr	/BOOTMGR
