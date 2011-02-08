@@ -285,14 +285,14 @@ Programs='
 Check_Prog=1;
 
 for Program in ${Programs} ; do
-  if [ ! type ${Program} > /dev/null 2>&1 ] ; then
-     echo \"${Program}\" could not be found. >&2;
+  if [ $(type ${Program} > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
+     echo "\"${Program}\" could not be found." >&2;
      Check_Prog=0;
   fi
 done
 
 if [ ${Check_Prog} -eq 0 ] ; then
-   echo 'Please install the missing program(s) and run boot_info_script again.' >&2;
+   printf '\nPlease install the missing program(s) and run boot_info_script again.\n' >&2;
    exit 1;
 fi
 
@@ -572,7 +572,7 @@ All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-
 
 ## Add found RAID disks to list of hard drives. ##
 
-if type dmraid >> ${Trash} 2>> ${Trash} ; then
+if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
   InActiveDMRaid=$(dmraid -si -c);
 
   if [ x"${InActiveDMRaid}" = x"no raid disks" ] ; then 
@@ -622,7 +622,7 @@ PTFormat='%-10s %4s%14s%14s%14s %3s %s\n';	## standard format (hexdump) to use f
 ## fdisk -s seems to malfunction sometimes. So use sfdisk -s if available. ##
 
 fdisks () {
-  if type sfdisk >> ${Trash} 2>> ${Trash} ; then
+  if [ $(type sfdisk >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
      sfdisk -s "$1" 2>> ${Trash};
   else
      fdisk -s "$1" 2>> ${Trash};
@@ -2629,8 +2629,8 @@ fi
 #
 #   Only works if the "LVM2"-package is installed.
 
-if type lvscan >> ${Trash} 2>> ${Trash} && type lvdisplay >> ${Trash} 2>> ${Trash} && type lvchange >> ${Trash} 2>> ${Trash} ; then
-   
+if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
+
   LVM_Partitions=$(lvscan | gawk '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
 
   for LVM in ${LVM_Partitions}; do 
@@ -2659,8 +2659,8 @@ fi
 #
 #   Only works if "mdadm" is installed.
 
-if type mdadm >> ${Trash} 2>> ${Trash} ; then
-  
+if [ $(type mdadm >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
+
   # All arrays which are already assembled.
   MD_Active_Array=$(mdadm --detail --scan | gawk '{ print $2 }');
 
