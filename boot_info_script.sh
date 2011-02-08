@@ -207,6 +207,12 @@ fi
 
 
 
+## Display version number and last modification date. ##
+
+printf '\nboot_info_script version: %s        [%s]\n\n' "${VERSION}" "${DATE}";
+
+
+
 ## Check if all necessary programs are available. ##
 
 Programs='
