@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION='0.56';
-DATE='1 February 2011';
+DATE='8 February 2011';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2011              Ulrich Meierfrankenfeld and Gert Hulslemans  #
@@ -51,18 +51,19 @@ DATE='1 February 2011';
 #     bash ./boot_info_script*.sh <outputfile>                                 #
 #                                                                              #
 #   To get version number and last editing date of this script, use:           #
+#     (no root rights needed)                                                  #
 #                                                                              #
 #     bash ./boot_info_script*.sh -v                                           #
 #     bash ./boot_info_script*.sh -V                                           #
 #     bash ./boot_info_script*.sh --version                                    #
 #                                                                              #
-#   To get help running this script, use:                                      #
+#   To get help running this script, use (no root rights needed):              #
 #                                                                              #
 #     bash ./boot_info_script*.sh -h                                           #
 #     bash ./boot_info_script*.sh -help                                        #
 #     bash ./boot_info_script*.sh --help                                       #
 #                                                                              #
-#   To automatically gzip a copy of the output file, use:                      #
+#   To automatically gzip a copy of the output file, use (root rights needed): #
 #                                                                              #
 #     bash ./boot_info_script*.sh -g <outputfile>                              #
 #     bash ./boot_info_script*.sh --gzip <outputfile>                          #
@@ -95,7 +96,7 @@ DATE='1 February 2011';
 #       bootdrive of the stage 2 files it is trying to chainload.              #
 #     - Display boot configuration files.                                      #
 #     - Is able to search LVM partitions if the LVM2 package is installed      #
-#       ("apt-get install lvm2" in debian based  distros).                     #
+#       ("apt-get install lvm2" in debian based distros).                      #
 #     - Is able to search Linux Software RAID partitions (MD RAIDs) if the     #
 #       "mdadm" package is installed.                                          #
 #     - If dmraid is installed, search all RAID drives, detected by dmraid.    #
@@ -160,18 +161,19 @@ help () {
    echo '';
    echo '';
    echo '  To get version number and last editing date of this script, use:';
+   echo '    (no root rights needed)';
    echo '';
    echo "    bash $0 -v";
    echo "    bash $0 -V";
    echo "    bash $0 --version";
    echo '';
-   echo '  To get this help text, use:';
+   echo '  To get this help text, use (no root rights needed):';
    echo '';
    echo "    bash $0 -h";
    echo "    bash $0 -help";
    echo "    bash $0 --help";
    echo '';
-   echo '  To automatically gzip a copy of the output file, use:';
+   echo '  To automatically gzip a copy of the output file, use (root rights needed):';
    echo '';
    echo "    bash $0 -g <outputfile>  ";
    echo "    bash $0 --gzip <outputfile>  ";
