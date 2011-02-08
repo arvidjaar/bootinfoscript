@@ -68,6 +68,13 @@ DATE='8 February 2011';
 #     bash ./boot_info_script.sh -g <outputfile>                               #
 #     bash ./boot_info_script.sh --gzip <outputfile>                           #
 #                                                                              #
+#  If multiple versions of boot_info_script are detected in the same           #
+#  directory, boot_info_script will list all versions found.                   #
+#  In that case you need to force boot_info_script to run a certain version,   #
+#  by adding "--this" as first argument (root rights needed):                  #
+#                                                                              #
+#     bash ./boot_info_script.sh --this <outputfile>                           #
+#                                                                              #
 ################################################################################
 #                                                                              #
 # Features:                                                                    #
@@ -175,8 +182,15 @@ help () {
    echo '';
    echo '  To automatically gzip a copy of the output file, use (root rights needed):';
    echo '';
-   echo "    bash $0 -g <outputfile>  ";
-   echo "    bash $0 --gzip <outputfile>  ";
+   echo "    bash $0 -g <outputfile>";
+   echo "    bash $0 --gzip <outputfile>";
+   echo '';
+   echo '  If multiple versions of boot_info_script are detected in the same directory,';
+   echo '  boot_info_script will list all versions found.';
+   echo '  In that case you need to force boot_info_script to run a certain version,';
+   echo '  by adding "--this" as first argument (root rights needed):';
+   echo '';
+   echo "    bash $0 --this <outputfile>";
    echo '';
 
    exit 0;
@@ -291,6 +305,10 @@ fi
 #   a file with the same name:
 #
 #     boot_info_script(<number>).sh
+#
+#   To force BIS to run a certain version, add "--this" as first argument:
+#
+#     bash ./boot_info_script.sh --this <outputfile>
 #
 
 if [ ${this_BIS} -eq 0 ] ; then
