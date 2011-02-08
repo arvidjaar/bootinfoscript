@@ -183,15 +183,31 @@ help () {
 }
 
 
+
+## Run this version of BIS even when multiple versions are detected in the same directory?
+this_BIS=0;	# no=0
+
 ## Gzip a copy of the output file? ##
 gzip_output=0;	# off=0
 
 
 
-## Argument passed to the script? ##
+## Get arguments passed to the script. ##
 
-if [ ! -z "$1" ] ; then
-   case "$1" in
+process_args () {
+  if [ ${#@} -ge 1 ] ; then
+     if [ $1 = '--this' ] ; then
+	this_BIS=1;	# run this version of BIS even if multiple versions are detected.
+
+	if [ ${#@} -ge 2 ] ; then
+	   shift;	# shift the command line parameters ($2 -> $1), so they can be processed.
+	else
+	   return 0;	# exit this function when only '--this' was passed.
+	fi
+     fi
+
+     # Process other arguments.
+     case "$1" in
 	-g	  ) gzip_output=1; if [ ! -z "$2" ] ; then LogFile_cmd="$2"; fi;;
 	--gzip	  ) gzip_output=1; if [ ! -z "$2" ] ; then LogFile_cmd="$2"; fi;;
 	-h	  ) help;;
@@ -202,8 +218,16 @@ if [ ! -z "$1" ] ; then
 	--version ) version;;
 	-*	  ) help;;
 	*	  ) LogFile_cmd="$1";;
-   esac
-fi
+     esac
+  fi
+}
+
+
+
+
+## Get arguments passed to the script. ##
+
+process_args ${@};
 
 
 
@@ -256,6 +280,35 @@ done
 if [ ${Check_Prog} -eq 0 ] ; then
    echo 'Please install the missing program(s) and run boot_info_script again.' >&2;
    exit 1;
+fi
+
+
+
+## Check if there are other boot_info_script.sh files in the same directory ##
+#
+#   This can be useful when BIS was downloaded multiple times with Firefox, Chromium, ...
+#   Those browsers will add a suffix to the filename, when there was already
+#   a file with the same name:
+#
+#     boot_info_script(<number>).sh
+#
+
+if [ ${this_BIS} -eq 0 ] ; then
+   declare -a BIS_files;
+
+   BIS_files=( $(ls "$(dirname "$0")/boot_info_script.sh" "$(dirname \"$0\")"/boot_info_script\(*\).sh 2> /dev/null) );
+
+   if [ "${#BIS_files[*]}" -ge 2 ] ; then
+      printf 'Multiple boot_info_script files where found:\n\n';
+
+      for i in ${!BIS_files[@]} ; do
+	eval $(echo 'BIS_'$(grep -m1 '^VERSION' "${BIS_files[$i]}") );
+	printf "  - ${BIS_files[$i]}:\tversion ${BIS_VERSION}\n";
+      done
+
+      printf '\nAre you sure you want to run this version? If so, run:\n\n  bash %s --this %s\n\n' "$0" "$*";
+      exit 1;
+   fi
 fi
 
 
