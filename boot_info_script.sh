@@ -619,13 +619,19 @@ PTFormat='%-10s %4s%14s%14s%14s %3s %s\n';	## standard format (hexdump) to use f
 
 
 
-## fdisk -s seems to malfunction sometimes. So use sfdisk -s if available. ##
+## Get total number of blocks on a device. ##
+#
+#   Sometimes "fdisk -s" seems to malfunction or isn't supported (busybox fdisk),
+#   so use "sfdisk -s" if available.
+#   If sfdisk isn't available, calculate the number of blocks from the number of
+#   sectors (divide by 2).
 
 fdisks () {
   if [ $(type sfdisk >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
      sfdisk -s "$1" 2>> ${Trash};
   else
-     fdisk -s "$1" 2>> ${Trash};
+     # Calculate the number of blocks from the number of sectors (divide by 2).
+     fdisk -lu "$1" 2>> ${Trash} | awk '$0 ~ /, .*, .*, .*/ { print $(NF - 1) / 2 }';
   fi
 }
    
