@@ -2847,8 +2847,7 @@ fi
 
 
 
-echo 'Finished. The results are in the file "'$(basename "${LogFile}")'"';
-echo 'located in "'${Dir}'".';
+printf '\nFinished. The results are in the file "%s"\nlocated in "%s".\n\n' "$(basename "${LogFile}")" "${Dir}/";
 
 exit 0;
 
