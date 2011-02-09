@@ -385,6 +385,7 @@ Boot_Prog_Fat='
 	/grldr
 	/grldr.mbr
 	/ntldr
+	/freeldr.sys
 	/NTDETECT.COM
 	/NTBOOTDD.SYS
 	/wubildr
@@ -432,6 +433,7 @@ Boot_Files_Fat='
 	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf
 	/ubuntu/disks/boot/grub/menu.lst	/ubuntu/disks/install/boot/grub/menu.lst	/ubuntu/winboot/menu.lst
 	/boot.ini
+	/freeldr.ini
 	/etc/fstab
 	/etc/lilo.conf	/lilo.conf
 	/syslinux.cfg	/syslinux/syslinux.cfg	/boot/syslinux/syslinux.cfg
@@ -1780,6 +1782,7 @@ Get_Partition_Info() {
 	0bd0) BST='MSWIN4.1: FAT32';;
 	0e00) BST='Dell Utility: FAT16';;
 	0fb6) BST='ISOhybrid with partition support (Syslinux 3.82-3.86)';;
+	2a00) BST='ReactOS';;
 	2d5e) BST='Dos 1.1';;
 	31c0) BST='Syslinux 4.03 or higher';
 	      syslinux_info ${part} '4.03';
@@ -2031,7 +2034,9 @@ Get_Partition_Info() {
 	  grep -q "${WinOS}" "${mountname}"/{IO.SYS,io.sys} 2>> ${Trash} && OS="${WinOS}";
 	done        
 
-	[ -s "${mountname}/Windows/System32/config/SecEvent.Evt" ] || [ -s "${mountname}/WINDOWS/system32/config/SecEvent.Evt" ] || [ -s "${mountname}/WINDOWS/system32/config/secevent.evt" ] || [ -s "${mountname}/windows/system32/config/secevent.evt" ] && OS="Windows XP";
+	[ -s "${mountname}/Windows/System32/config/SecEvent.Evt" ] || [ -s "${mountname}/WINDOWS/system32/config/SecEvent.Evt" ] || [ -s "${mountname}/WINDOWS/system32/config/secevent.evt" ] || [ -s "${mountname}/windows/system32/config/secevent.evt" ] && OS='Windows XP';
+
+	[ -s "${mountname}/ReactOS/system32/config/SecEvent.Evt" ] && OS='ReactOS';
 
 	[ -s "${mountname}/etc/issue" ] && OS=$(sed -e 's/\\. //g' -e 's/\\.//g' -e 's/^[ \t]*//' "${mountname}"/etc/issue);
 
@@ -2505,6 +2510,7 @@ for HI in ${!HDName[@]} ; do
 	  esac;;   
     fabe) BL='No boot loader?';;
     faeb) BL='Lilo';; 
+    fafc) BL='ReactOS';;
     fc31) BL='Testdisk';;
     fc33) BL='GAG';;
     fceb) BL='BootIt NG';;
