@@ -1686,17 +1686,17 @@ last_block_of_file () {
 			if ( ( bogus == 0) || ( extents == 0 ) ) { \
 				printf "EndGiByte=??; EndGByte=??;" \
 			} else { \
-				printf "EndGiByte=%.6f; EndGByte=%.6f;", EndByte / 1024 ^ 3, EndByte / 1000 ^ 3; \
+				printf "EndGiByte=%.9f; EndGByte=%.9f;", EndByte / 1024 ^ 3, EndByte / 1000 ^ 3; \
 			} \
 		}');
 
        if [ "${BlockSize}" -ne 0 ] ; then
 	  if [ "${Filefrag_Old}" = "true" ] ; then
 	     # Old version of filefrag.
-	     printf "%1.8s GiB / %-1.8s GB :  %s\n" "${EndGiByte}" "${EndGByte}" "${file}" >> ${Tmp_Log};
+	     printf "%14s = %-14s %s\n" "${EndGiByte}" "${EndGByte}" "${file}" >> ${Tmp_Log};
 	  else
 	     # New version of filefrag.
-	     printf "%1.8s GiB / %-1.8s GB :  %-36s %s fragment(s)\n" "${EndGiByte}" "${EndGByte}" "${file}" "${Fragments}" >> ${Tmp_Log};
+	     printf "%14s = %-14s %-45s %2s\n" "${EndGiByte}" "${EndGByte}" "${file}" "${Fragments}" >> ${Tmp_Log};
 	  fi
        fi
 
@@ -2182,11 +2182,13 @@ Get_Partition_Info() {
 
 	if [ $( last_block_of_file ${GrubError18_Files} ; echo $? ) -ne 0 ] ; then
 	   titlebar_gen "${name}" ': Location of files loaded by Grub';
+	   printf "%11sGiB - GB%13sFile%33sFragment(s)\n\n" ' ' ' ' ' ' >> "${Log1}";
 	   cat ${Tmp_Log} >> "${Log1}";
 	fi
 
 	if [ $( last_block_of_file ${SyslinuxError_Files} ; echo $? ) -ne 0 ] ; then
 	   titlebar_gen "${name}" ': Location of files loaded by Syslinux';
+	   printf "%11sGiB - GB%13sFile%33sFragment(s)\n\n" ' ' ' ' ' ' >> "${Log1}";
 	   cat ${Tmp_Log} >> "${Log1}";
 	fi
 
