@@ -1617,7 +1617,7 @@ get_embedded_menu () {
 
      # Calcutate the exact offset to the embedded menu.
      offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
-     dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | gawk -F '\0' '{print $1}' >> "${Log1}";
+	 dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | gawk 'BEGIN { RS="\0" } { if (NR == 1) print $0 }' >> "${Log1}";
 
      echo '--------------------------------------------------------------------------------' >> "${Log1}";
   fi
