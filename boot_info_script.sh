@@ -1485,8 +1485,8 @@ syslinux_info () {
 stage2_loc () {
   local stage1="$1" HI;
 
-  offset=$(hexdump -v -s 68 -n 4 -e '4 "%u"' "${stage1}" 2>> ${Trash});
-  dr=$(hexdump -v -s 64 -n 1 -e '"%d"' "${stage1}" 2>> ${Trash});
+  offset=$(hexdump -v -s 68 -n 4 -e '4 "%u"' "${stage1}");
+  dr=$(hexdump -v -s 64 -n 1 -e '1/1 "%u"' "${stage1}");
   pa='T';
   Grub_Version='';
 
@@ -2365,7 +2365,7 @@ for HI in ${!HDName[@]} ; do
   case ${MBR_sig2} in
 
     eb48) ## Grub Legacy is in the MBR. ##
-	  BL="Grub Legacy ${Grub_Version}";
+	  BL="Grub Legacy";
 
 	  # 0x44 contains the offset to the next stage.
 	  offset=$(hexdump -v -s 68 -n 4 -e '"%u"' ${drive});
@@ -2378,6 +2378,9 @@ for HI in ${!HDName[@]} ; do
 	     # Grub is installed with stage1.5 files.
 	     Grub_String=$(hexdump -v -s 1042 -n 94 -e '"%_u"' ${drive});
 	     Grub_Version="${Grub_String%%nul*}";
+
+	     BL="Grub Legacy ${Grub_Version}";
+
 	     tmp="/${Grub_String#*/}";
 	     tmp="${tmp%%nul*}";
 
@@ -2386,7 +2389,7 @@ for HI in ${!HDName[@]} ; do
 	     [[ x"$menu" = x'' ]] || stage="${stage} and ${menu}";
 
 	     part_info=$((1045 + ${#Grub_Version}));
-	     eval $(hexdump -v -s ${part_info} -n 2 -e '1/1 "pa=%d; " 1/1 "dr=%d"' ${drive});
+	     eval $(hexdump -v -s ${part_info} -n 2 -e '1/1 "pa=%u; " 1/1 "dr=%u"' ${drive});
 	     
 	     dr=$(( ${dr} - 127 ));
 	     pa=$(( ${pa} + 1 ));
