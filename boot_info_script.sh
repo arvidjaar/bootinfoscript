@@ -1831,18 +1831,18 @@ Get_Partition_Info() {
 	fbc0) BST='ISOhybrid (Syslinux 3.81)';;
 
 	## If Grub,or Grub 2 is in the boot sector, investigate the embedded information. ##
-	48b4) BST='Grub 1.96';    
+	48b4) BST='Grub2 (v1.96)';    
 	      core_loc ${part} '1.96';
-	      BSI="${BSI} Grub 1.96 is installed in the boot sector of ${name} and ${Core_Msg}";;
-	7c3c) BST='Grub 1.97-1.98';    
+	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Core_Msg}";;
+	7c3c) BST='Grub2 (v1.97-1.98)';    
 	      core_loc ${part} '1.97';
-	      BSI="${BSI} Grub 2 is installed in the boot sector of ${name} and ${Core_Msg}";;
-	0020) BST='Grub 1.99';
+	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Core_Msg}";;
+	0020) BST='Grub2 (v1.99)';
 	      core_loc ${part} '1.99';
-	      BSI="${BSI} Grub 2 is installed in the boot sector of ${name} and ${Core_Msg}";;
- aa75 | 5272) BST='Grub';
+	      BSI="${BSI} Grub2 (v1.99) is installed in the boot sector of ${name} and ${Core_Msg}";;
+ aa75 | 5272) BST='Grub Legacy';
 	      stage2_loc ${part};
-	      BSI="${BSI} Grub ${Grub_Version} is installed in the boot sector of ${name} and ${Stage2_Msg}";;
+	      BSI="${BSI} Grub Legacy (v${Grub_Version}) is installed in the boot sector of ${name} and ${Stage2_Msg}";;
 
 	## If Lilo is in the VBR, look for map file ##
 	8053) BST='LILO';
@@ -2144,28 +2144,29 @@ Get_Partition_Info() {
 		     BFI="${BFI} BootPart in the file ${file}${loader} is trying to chainload sector #${offset} on boot drive #${dr}";
 		  fi
 
-		  # Grub Legacy and Grub1.96 have "Grub" written at 0x17f.
-		  sig=$(hexdump -v -s 383 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
+		  # Grub Legacy, Grub2 (v1.96) and Grub2 (v1.99) have "Grub" written at 0x17f.
+		  sig=$(hexdump -v -s 383 -n 4 -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
-		  if [ "${sig}"  = 'GRUB' ] ; then
-		     sig2=$(hexdump -v -n  2 -e '/1 "%x"' "${mountname}${file}${loader}");
+		  if [ "${sig}" = 'GRUB' ] ; then
+		     sig2=$(hexdump -v -n 2 -e '/1 "%02x"' "${mountname}${file}${loader}");
 
-		     # Distinguish Grub Legacy and Grub 2 by the first two bytes.
-		     if [[ "$sig2" = 'eb48' ]] ; then
-			stage2_loc  "${mountname}${file}${loader}";
-			BFI="${BFI} Grub ${Grub_Version} in the file ${file}${loader} ${Stage2_Msg}";
-		     else 
-			core_loc "${mountname}${file}${loader}" 1.96;
-			BFI="${BFI} Grub 1.96 in the file ${file}${loader} ${Core_Msg}"; 
-		     fi
+		     # Distinguish Grub Legacy and Grub2 (v1.96) by the first two bytes.
+		     case "${sig2}" in
+		       eb48) stage2_loc "${mountname}${file}${loader}";
+			     BFI="${BFI} Grub Legacy (v${Grub_Version}) in the file ${file}${loader} ${Stage2_Msg}";;
+		       eb4c) core_loc "${mountname}${file}${loader}" 1.96;
+			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Core_Msg}";;
+		       eb63) core_loc "${mountname}${file}${loader}" 1.99;
+			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Core_Msg}";;
+		     esac
 		  fi
 
 		  # Grub 2 has "Grub" written at 0x188.
 		  sig=$(hexdump -v -s 392 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
-		  if [ "${sig}"  = 'GRUB' ]; then
+		  if [ "${sig}" = 'GRUB' ]; then
 		     core_loc "${mountname}${file}${loader}" 1.97;
-		     BFI="${BFI} Grub 2 in the file ${file}${loader} ${Core_Msg}"; 
+		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Core_Msg}"; 
 		  fi
 	       fi
 	     done	# End of loop through the files in a particular Boot_Code_Directory.
@@ -2389,7 +2390,7 @@ for HI in ${!HDName[@]} ; do
 	     Grub_String=$(hexdump -v -s 1042 -n 94 -e '"%_u"' ${drive});
 	     Grub_Version="${Grub_String%%nul*}";
 
-	     BL="Grub Legacy ${Grub_Version}";
+	     BL="Grub Legacy (v${Grub_Version})";
 
 	     tmp="/${Grub_String#*/}";
 	     tmp="${tmp%%nul*}";
@@ -2411,18 +2412,18 @@ for HI in ${!HDName[@]} ; do
 	     fi
 	  fi;;
 
-    eb4c) ## Grub 1.96 is in the MBR. ##
-	  BL='Grub 1.96';
+    eb4c) ## Grub2 (v1.96) is in the MBR. ##
+	  BL='Grub2 (v1.96)';
 
 	  # 0x44 contains the offset to the Core.
 	  offset=$(hexdump -v -s 68 -n 4 -e '"%u"' ${drive});
 
 	  if [ "${offset}" -ne 1 ] ; then
-	     # Grub 1.96 is installed without Core. 
+	     # Grub2 (v1.96) is installed without Core. 
 	     core_loc ${drive} '1.96';
 	     Message="${Message} and ${Core_Msg}";
 	  else
-	     # Grub 1.96 is installed with Core.
+	     # Grub2 (v1.96) is installed with Core.
 	     Grub_String=$(hexdump -v -s 1056 -n 64 -e '"%_u"' ${drive});
 	     Core_Dir=$(echo "${Grub_String}" | sed 's/nul[^$]*//');
 	     pa=$(hexdump -v -s 1044 -n 1 -e '"%d"' ${drive});
@@ -2437,10 +2438,10 @@ for HI in ${!HDName[@]} ; do
 	     fi
 	  fi;;
 
-    eb63) ## Grub 2 is in the MBR. ##
+    eb63) ## Grub2 is in the MBR. ##
 	  case ${MBR_bytes80to81} in
-		7c3c) grub2_version='1.97'; BL='Grub 1.97-1.98';;
-		0020) grub2_version='1.99'; BL='Grub 1.99';;
+		7c3c) grub2_version='1.97'; BL='Grub2 (v1.97-1.98)';;
+		0020) grub2_version='1.99'; BL='Grub2 (v1.99)';;
 	  esac
 
 	  # 0x5c contains the offset to the Core.
@@ -2455,7 +2456,7 @@ for HI in ${!HDName[@]} ; do
 
 	     if [ ${grub2_version} = '1.99' ] ; then
 
-		# For Grub v1.99, the Core_Dir is just at the beginning of the compressed part of core.img
+		# For Grub2 (v1.99), the Core_Dir is just at the beginning of the compressed part of core.img:
 		# 
 		# Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520+512 = 1032
 		# Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524+512 = 1036
@@ -2476,7 +2477,7 @@ for HI in ${!HDName[@]} ; do
 		fi
 
 	     else
-		# Grub v1.97-1.98.
+		# Grub2 (v1.97-1.98).
 		Core_Dir=$(hexdump -v -s 1052 -n 64 -e '"%_u"' ${drive} | sed 's/nul[^$]*//');
 	     fi
 
