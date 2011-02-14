@@ -1834,7 +1834,7 @@ Get_Partition_Info() {
 	48b4) BST='Grub 1.96';    
 	      core_loc ${part} '1.96';
 	      BSI="${BSI} Grub 1.96 is installed in the boot sector of ${name} and ${Core_Msg}";;
-	7c3c) BST='Grub 1.97 - 1.98';    
+	7c3c) BST='Grub 1.97-1.98';    
 	      core_loc ${part} '1.97';
 	      BSI="${BSI} Grub 2 is installed in the boot sector of ${name} and ${Core_Msg}";;
 	0020) BST='Grub 1.99';
@@ -2438,46 +2438,50 @@ for HI in ${!HDName[@]} ; do
 	  fi;;
 
     eb63) ## Grub 2 is in the MBR. ##
-	  BL='Grub 2';
+	  case ${MBR_bytes80to81} in
+		7c3c) grub2_version='1.97'; BL='Grub 1.97-1.98';;
+		0020) grub2_version='1.99'; BL='Grub 1.99';;
+	  esac
 
 	  # 0x5c contains the offset to the Core.
 	  offset=$(hexdump -v -s 92 -n 4 -e '"%u"' ${drive});
 
 	  if [ "${offset}" -ne 1 ] ; then
 	     # Grub2 is installed without embedded Core.
-	     core_loc ${drive} 1.97;
+	     core_loc ${drive} ${grub2_version};
 	     Message="${Message} and ${Core_Msg}";
 	  else
 	     # Grub2 is installed with embedded Core.
 
-	     # For Grub 2 (v1.99), the Core_Dir is just at the beginning of the compressed part of core.img
-	     # 
-	     # Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520+512 = 1032
-	     # Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524+512 = 1036
-	     # Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528+512 = 1040
-	     # Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532+512 = 1044 --> only 1 byte needed
+	     if [ ${grub2_version} = '1.99' ] ; then
 
-	     eval $(hexdump -v -s $((0x208 + 512)) -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1/1 "; install_dos_part=%d; "' ${drive});
+		# For Grub v1.99, the Core_Dir is just at the beginning of the compressed part of core.img
+		# 
+		# Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520+512 = 1032
+		# Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524+512 = 1036
+		# Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528+512 = 1040
+		# Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532+512 = 1044 --> only 1 byte needed
 
-	     # Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
-	     eval $(hexdump -v -s 512 -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${drive} | \
+		eval $(hexdump -v -s $((0x208 + 512)) -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1/1 "; install_dos_part=%d; "' ${drive});
+
+		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
+		eval $(hexdump -v -s 512 -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${drive} | \
 		   gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 + 512 } }');
 
-	     if [ ${offset_lzma} -ne 0 ] ; then
-		# if The offset of lzma is after 4096 bytes assume it is the version with the lzma encoded cor dir string
-		if [ ${offset_lzma} -gt 4096 ] ; then
+		if [ ${offset_lzma} -ne 0 ] ; then
 		   # Make lzma header (13 bytes) and add lzma_stream:
 		   printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log}
 		   Core_Dir=$(dd if=${drive} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} | cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
-		else
-		      Core_Dir=$(hexdump -v -s 1052 -n 64 -e '"%_u"' ${drive} | sed 's/nul[^$]*//');
 		fi
-#	     fi
 
-	#     Core_Dir=$(echo  ${Grub_String} | sed s/nul[^$]*//);
-	     pa=$(hexdump -v -s 1044  -n 1 -e '"%d"' ${drive});
-	     dr=$(hexdump -v -s 77  -n 1 -e '"%d"' ${drive});
+	     else
+		# Grub v1.97-1.98.
+		Core_Dir=$(hexdump -v -s 1052 -n 64 -e '"%_u"' ${drive} | sed 's/nul[^$]*//');
+	     fi
+
+	     pa=$(hexdump -v -s 1044 -n 1 -e '"%d"' ${drive});
+	     dr=$(hexdump -v -s 77 -n 1 -e '"%d"' ${drive});
 	     dr=$(( ${dr} - 127 ));
 	     pa=$(( ${pa} + 1 ));
 
@@ -2486,8 +2490,7 @@ for HI in ${!HDName[@]} ; do
 	     else
 	        Message="${Message} and looks on the same drive in partition #${pa} for ${Core_Dir}";
 	     fi
-	fi # fix
-	    fi;;
+	  fi;;
 
     0ebe) BL='ThinkPad';;
     31c0) BL='Acer 3';;
