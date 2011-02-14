@@ -2498,9 +2498,13 @@ for HI in ${!HDName[@]} ; do
 	  case ${MBR_sig3} in
 	    33c08e) BL='Windows';;
 	    33c090) BL='DiskCryptor';;
-	    33c0fa) BL='Syslinux MBR';;
+	    33c0fa) BL='Syslinux MBR (4.04 and higher)';;			
 	  esac;;
-    33ed) BL='ISOhybrid (Syslinux)';;
+    33ed) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
+	  case ${MBR_bytes80to81} in
+	    407c) BL='ISOhybrid (Syslinux 4.04 and higher)';;
+	    83e1) BL='ISOhybrid with partition support (Syslinux 4.04 and higher)';;
+	  esac;;
     33ff) BL='HP/Gateway';;
     b800) BL='Plop';;
     ea05) BL='XOSL';;
@@ -2517,8 +2521,25 @@ for HI in ${!HDName[@]} ; do
 	  esac;;
     fa31) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig3} in
-	    fa31c0) BL='Syslinux MBR';;
+	    fa31c0) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
+		    case ${MBR_bytes80to81} in
+		      0069) BL='ISOhybrid (Syslinux 3.72-3.73)';;
+		      7c66) BL='Syslinux MBR (3.61-4.03)';;
+		      7cb8) BL='Syslinux MBR (3.36-3.51)';;
+		      b442) BL='Syslinux MBR (3.00-3.35)';;
+		      bb00) BL='Syslinux MBR (3.52-3.60)';;
+		      e879) BL='ISOhybrid (Syslinux 3.74-3.80)';;
+		    esac;;
 	    fa31c9) BL='Master Boot LoaDeR';;   
+	    fa31ed) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
+		    case ${MBR_bytes80to81} in
+		      0069) BL='ISOhybrid (Syslinux 3.72-3.73)';;
+		      0fb6) BL='ISOhybrid with partition support (Syslinux 3.82-3.86)';;
+		      407c) BL='ISOhybrid (Syslinux 3.82-4.03)';;
+		      83e1) BL='ISOhybrid with partition support (Syslinux 4.00-4.03)';;
+		      b6c6) BL='ISOhybrid with partition support (Syslinux 3.81)';;
+		      fbc0) BL='ISOhybrid (Syslinux 3.81)';;
+		    esac;;
 	  esac;;
     fa33) BL='MS-DOS 3.30 through Windows 95 (A)';;
     fab8) # Look at the first 4 bytes of the hard drive to identify the boot code installed in the MBR.
