@@ -2354,13 +2354,23 @@ for HI in ${!HDName[@]} ; do
   drive="${HDName[${HI}]}";
   Message="is installed in the MBR of ${drive}";
 
+  # Read the whole MBR in hexadecimal format.
+  MBR_512=$(hexdump -v -n 512 -e '/1 "%02x"' ${drive});
+
   ## Look at the first 2-4 bytes of the hard drive to identify the boot code installed in the MBR. ##
   #
   #   If it is not enough, look at more bytes.
 
-  MBR_sig4=$(hexdump -v -n 4 -e '/1 "%02x"' ${drive});
-  MBR_sig3="${MBR_sig4:0:6}";
-  MBR_sig2="${MBR_sig4:0:4}";
+  MBR_sig4="${MBR_512:0:8}";
+  MBR_sig3="${MBR_512:0:6}";
+  MBR_sig2="${MBR_512:0:4}";
+
+  ## Bytes 0x80-0x81 of the MBR. ##
+  #
+  #   Use it to differentiate between different versions of the same bootloader.
+
+  MBR_bytes80to81="${MBR_512:256:4}";
+
 
   case ${MBR_sig2} in
 
