@@ -2244,7 +2244,7 @@ Get_Partition_Info() {
 
      # If partition failed to mount.
      else
-	echo "    Mounting failed:" >> "${Log}";  
+	printf "    Mounting failed:   " >> "${Log}";  
 	cat ${Mount_Error} >> "${Log}"; 
      fi		# End of Mounting "if then else".
   fi	  	# End of Partition Type "if then else".
