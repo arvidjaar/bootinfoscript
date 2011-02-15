@@ -1737,7 +1737,7 @@ Get_Partition_Info() {
   # Type of filesystem according to blkid.
   type=$(BlkidTag ${part} TYPE);
 
-  [ "${system}" = 'Bios Boot Partition' ] && type='Bios Boot Partition';
+  [ "${system}" = 'Bios Boot partition' ] && type='Bios Boot partition';
   [ -n ${PI} ] && FileArray[${PI}]=${type};
   
   printf '%s: __________________________________________________________________________\n\n' "${name}" >> "${Log}";
@@ -2006,7 +2006,7 @@ Get_Partition_Info() {
 	'crypto_Luks'		) part_no_mount=1;;
   esac
 
-  if [ "${part_no_mount}" -eq 0 ] && [ "${system}" != 'Bios Boot Partition' ] ; then
+  if [ "${part_no_mount}" -eq 0 ] && [ "${system}" != 'Bios Boot partition' ] ; then
      CheckMount=$(mount | gawk -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
 
      # Check whether partition is already mounted.
