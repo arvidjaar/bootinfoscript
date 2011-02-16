@@ -1727,7 +1727,7 @@ last_block_of_file () {
 
 Get_Partition_Info() {
   local Log="$1" Log1="$2" part="$3" name="$4" mountname="$5"  kind="$6"  start="$7"  end="$8" system="$9" PI="${10}";
-  local size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
+  local line size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
   local offset_menu='' part_no_mount=0 com32='' com32_version='';
 
 
@@ -1739,8 +1739,12 @@ Get_Partition_Info() {
 
   [ "${system}" = 'Bios Boot partition' ] && type='Bios Boot partition';
   [ -n ${PI} ] && FileArray[${PI}]=${type};
-  
-  printf '%s: __________________________________________________________________________\n\n' "${name}" >> "${Log}";
+
+  # Display partition subtitle of 80 characters width.
+  line='________________________________________________________________________________';
+  line=${line:$(( ${#name} + 2 ))};
+
+  printf '%s: %s\n\n' "${name}" "${line}" >> "${Log}";
 
   # Directory where the partition will be mounted.
   mkdir -p "${mountname}";
