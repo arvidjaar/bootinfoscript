@@ -1563,10 +1563,10 @@ core_loc () {
      hdd=${HDName[${HI}]};
 
      if [ ${offset} -lt ${HDSize[HI]} ] ; then
-	tmp=$(dd if="${hdd}" skip=${offset} count=1 2>> ${Trash} | hexdump -v -n 4 -e '"%x"');
+	tmp=$(dd if="${hdd}" skip=${offset} count=1 2>> ${Trash} | hexdump -v -n 4 -e '/1 "%02x"');
 
-	if [ "${tmp}" = '1bbe5652' ] ; then
-	   # conf.img file was found.
+	if [ "${tmp}" = '52e82801' ] ; then
+	   # core.img file was found.
 	   dd if=${hdd} skip=$((${offset}+1)) count=1 of=${Tmp_Log} 2>> ${Trash};
 	   pa=$(hexdump -v -s 20 -n 1 -e '"%d"' ${Tmp_Log});
 	   core_hdd=${hdd};
