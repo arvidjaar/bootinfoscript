@@ -1737,7 +1737,7 @@ Get_Partition_Info() {
   # Type of filesystem according to blkid.
   type=$(BlkidTag ${part} TYPE);
 
-  [ "${system}" = 'Bios Boot partition' ] && type='Bios Boot partition';
+  [ "${system}" = 'BIOS Boot partition' ] && type='BIOS Boot partition';
   [ -n ${PI} ] && FileArray[${PI}]=${type};
 
   # Display partition subtitle of 80 characters width.
@@ -2003,7 +2003,7 @@ Get_Partition_Info() {
   ## Exclude partitions which contain no information, or which we (currently) don't know how to  accces. ##
 
   case "${type}" in
-	'Bios Boot partition'	) part_no_mount=1;;
+	'BIOS Boot partition'	) part_no_mount=1;;
 	'crypto_Luks'		) part_no_mount=1;;
 	'Extended Partition'	) part_no_mount=1;;
 	'linux_raid_member'	) part_no_mount=1;;
