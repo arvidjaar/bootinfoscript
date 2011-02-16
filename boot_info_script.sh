@@ -2003,15 +2003,16 @@ Get_Partition_Info() {
   ## Exclude partitions which contain no information, or which we (currently) don't know how to  accces. ##
 
   case "${type}" in
-	'swap'			) part_no_mount=1;;
-	'Extended Partition'	) part_no_mount=1;;
-	'unknown volume type'	) part_no_mount=1;;
-	'LVM2_member'		) part_no_mount=1;;
-	'linux_raid_member'	) part_no_mount=1;;
+	'Bios Boot partition'	) part_no_mount=1;;
 	'crypto_Luks'		) part_no_mount=1;;
+	'Extended Partition'	) part_no_mount=1;;
+	'linux_raid_member'	) part_no_mount=1;;
+	'LVM2_member'		) part_no_mount=1;;
+	'swap'			) part_no_mount=1;;
+	'unknown volume type'	) part_no_mount=1;;
   esac
 
-  if [ "${part_no_mount}" -eq 0 ] && [ "${system}" != 'Bios Boot partition' ] ; then
+  if [ "${part_no_mount}" -eq 0 ] ; then
      CheckMount=$(mount | gawk -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
 
      # Check whether partition is already mounted.
