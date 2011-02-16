@@ -2862,6 +2862,12 @@ fi
 
 
 
+## Write a final newline. ##
+
+echo >> "${Log}";
+
+
+
 ## Copy the log file to RESULTS file and make the user the owner of RESULTS file. ##
 
 cp "${Log}" "${LogFile}";
