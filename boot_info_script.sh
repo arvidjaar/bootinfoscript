@@ -1791,6 +1791,7 @@ Get_Partition_Info() {
 	31c0) BST='Syslinux 4.03 or higher';
 	      syslinux_info ${part} '4.03';
 	      BSI="${BSI} ${Syslinux_Msg}";;
+	31d2) BST="Grub2's core.img";;		# TODO: Add Core_dir and partition display
 	3a5e) BST='Recovery: FAT32';;
 	407c) BST='ISOhybrid (Syslinux 3.82-4.04)';;
 	4216) BST='Grub4Dos: NTFS';;
