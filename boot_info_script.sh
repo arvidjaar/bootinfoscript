@@ -1774,7 +1774,7 @@ Get_Partition_Info() {
 	010f) BST='HP Recovery';;
 	019d) BST='BSD4.4: FAT32';;
 	0211) BST='Dell Utility: FAT16';;
-	0488) BST="Grub 2's core.img";;
+	0488) BST="Grub2's core.img";;
 	0689) BST='Syslinux 3.00-3.52';
 	      syslinux_info ${part};
 	      BSI="${BSI} ${Syslinux_Msg}";;
@@ -2150,7 +2150,7 @@ Get_Partition_Info() {
 		     BFI="${BFI} BootPart in the file ${file}${loader} is trying to chainload sector #${offset} on boot drive #${dr}";
 		  fi
 
-		  # Grub Legacy, Grub2 (v1.96) and Grub2 (v1.99) have "Grub" written at 0x17f.
+		  # Grub Legacy, Grub2 (v1.96) and Grub2 (v1.99) have "GRUB" written at 0x17f.
 		  sig=$(hexdump -v -s 383 -n 4 -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ] ; then
@@ -2167,7 +2167,7 @@ Get_Partition_Info() {
 		     esac
 		  fi
 
-		  # Grub 2 has "Grub" written at 0x188.
+		  # Grub2 (v1.97-1.98) has "GRUB" written at 0x188.
 		  sig=$(hexdump -v -s 392 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
