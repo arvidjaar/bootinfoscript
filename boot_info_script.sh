@@ -558,6 +558,7 @@ Trash=${Folder}/Trash		  # File to catch all usual Standard Errors these
 Mount_Error=${Folder}/Mount_Error # File to catch Mounting Errors.
 Unknown_MBR=${Folder}/Unknown_MBR # File to record all unknown MBR and Boot sectors.
 Tmp_Log=${Folder}/Tmp_Log	  # File to temporarily hold some information.
+core_img_file=${Folder}/core_img  # File to temporarily store an embedded core.img of grub2.
 PartitionTable=${Folder}/PT	  # File to store the Partition Table.
 FakeHardDrives=${Folder}/FakeHD   # File to list devices which seem to have  no corresponding drive.
 BLKID=${Folder}/BLKID		  # File to store the output of blkid.
@@ -1543,53 +1544,100 @@ stage2_loc () {
 ## Grub2 ##
 #
 #   Determine the embeded location of core.img for a Grub2 boot.img file,
-#   look for the core.img and, the path of the Grub Folder.
+#   look for the core.img and the path of the grub2 directory.
+#
 
-core_loc () {
-  local stage1="$1" grub2_version="$2" HI offset_loc dr_loc dir_loc;
+grub2_info () {
+  local stage1="$1" hdd="$2" grub2_version="$3";
+  local sector_offset drive_offset directory_offset sector_nr drive_nr drive_nr_hex;
+  local partition core_dir HI magic core_img_found=0;
 
   case "${grub2_version}" in
-    1.96) offset_loc='68';  dr_loc='76'; dir_loc='32';;
-    1.97) offset_loc='92';  dr_loc='91'; dir_loc='28';;
-    1.99) offset_loc='92';  dr_loc='91'; dir_loc='28';;
+    1.96) sector_offset='68';  drive_offset='76'; directory_offset='553';;
+    1.97) sector_offset='92';  drive_offset='91'; directory_offset='540';;
+    1.99) sector_offset='92';  drive_offset='91';;
   esac
 
-  offset=$(hexdump -v -s ${offset_loc} -n 4 -e '4 "%u"' "${stage1}" 2>> ${Trash});
-  dr=$(hexdump -v -s ${dr_loc} -n 1 -e '"%d"' "${stage1}" 2>> ${Trash});
-  pa='T';
+  # Offset to core.img (in sectors).
+  sector_nr=$(hexdump -v -s ${sector_offset} -n 4 -e '4 "%u"' "${stage1}" 2>> ${Trash});
+
+  # BIOS drive number on which grub2 looks for its second stage (=core.img).
+  drive_nr_hex=$(hexdump -v -s ${drive_offset} -n 1 -e '"0x%02x"' "${stage1}" 2>> ${Trash});
+  drive_nr=$(( ${drive_nr_hex} - 127 ));
+
+  Grub2_Msg="looks at sector ${sector_nr} of the same hard drive for core.img";
 
   for HI in ${!HDName[@]} ; do
+    # If the drive name passed to grub2_info matches the drive name of the current
+    # value of HDName, see if the sector offset to core.img is smaller than the
+    # total number of sectors of that drive.
 
-     hdd=${HDName[${HI}]};
+    if [ ${hdd} = ${HDName[${HI}]} ] ; then
+       if [ ${sector_nr} -lt ${HDSize[HI]} ] ; then
 
-     if [ ${offset} -lt ${HDSize[HI]} ] ; then
-	tmp=$(dd if="${hdd}" skip=${offset} count=1 2>> ${Trash} | hexdump -v -n 4 -e '/1 "%02x"');
+	  if [ ${sector_nr} -eq 1 ] ; then
+	     # Use "file/partition/drive" passed to grub2_info directly.
+	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
+	  else
+	     # Use "hdd" passed to grub2_info.
+	     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
+	  fi
 
-	if [ "${tmp}" = '52e82801' ] ; then
-	   # core.img file was found.
-	   dd if=${hdd} skip=$((${offset}+1)) count=1 of=${Tmp_Log} 2>> ${Trash};
-	   pa=$(hexdump -v -s 20 -n 1 -e '"%d"' ${Tmp_Log});
-	   core_hdd=${hdd};
-	   Grub_String=$(hexdump -v -s ${dir_loc} -n 64 -e '"%_u"' ${Tmp_Log});
-	   Core_Dir=$(echo ${Grub_String} | sed 's/nul[^$]*//');
-        fi
-     fi
+	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
+
+	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '52e82801' ] ) ; then
+	     # core.img file was found.
+	     core_img_found=1;
+
+	     if [ ${grub2_version} = '1.99' ] ; then
+
+		# For Grub2 (v1.99), the core_dir is just at the beginning of the compressed part of core.img:
+		# 
+		# Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520
+		# Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524
+		# Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528
+		# Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532 --> only 1 byte needed (partition)
+
+		eval $(hexdump -v -s 520 -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1/1 "; partition=%d; "' ${core_img_file});
+
+		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
+		eval $(hexdump -v -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${core_img_file} | \
+		       gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
+			     else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 } }');
+
+		if [ ${offset_lzma} -ne 0 ] ; then
+		   # Make lzma header (13 bytes), add lzma_stream, decompress it (unlzma) and extract the core_dir.
+		   printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log};
+
+		   core_dir=$(dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} \
+			    | cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
+		fi
+
+	     else
+		# Grub2 (v1.96 and v1.97-1.98).
+		partition=$(hexdump -v -s 532 -n 1 -e '"%d"' ${core_img_file});
+		core_dir=$(hexdump -v -s ${directory_offset} -n 64 -e '"%_u"' ${core_img_file} | sed 's/nul[^$]*//');
+	     fi
+	  fi
+       fi
+    fi
   done
 
-  Core_Msg="looks at sector ${offset} of the same hard drive for core.img";
 
-  if [ "${pa}" = "T" ] ; then
+  if [ ${core_img_found} -eq 0 ] ; then
      # core.img not found.
-     Core_Msg="${Core_Msg}, but core.img can not be found at this location."; 
+     Grub2_Msg="${Grub2_Msg}, but core.img can not be found at this location"; 
   else
      # core.img found.            
-     pa=$((${pa}+1));
-     Core_Msg="${Core_Msg}, core.img is at this location on ${core_hdd} and looks";
 
-     if [ "${pa}" -eq 255 ] ; then
-        Core_Msg="${Core_Msg} for ${Core_Dir}.";
+     Grub2_Msg="${Grub2_Msg}. core.img is at this location on BIOS drive ${drive_nr} (${drive_nr_hex})";
+
+     partition=$(( ${partition} + 1 ));
+
+     if [ ${partition} -eq 255 ] ; then
+	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
      else
-        Core_Msg="${Core_Msg} on partition #${pa} for ${Core_Dir}.";
+	Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
      fi
   fi
 }
@@ -1791,7 +1839,7 @@ Get_Partition_Info() {
 	31c0) BST='Syslinux 4.03 or higher';
 	      syslinux_info ${part} '4.03';
 	      BSI="${BSI} ${Syslinux_Msg}";;
-	31d2) BST="Grub2's core.img";;		# TODO: Add Core_dir and partition display
+	31d2) BST="Grub2's core.img";;
 	3a5e) BST='Recovery: FAT32';;
 	407c) BST='ISOhybrid (Syslinux 3.82-4.04)';;
 	4216) BST='Grub4Dos: NTFS';;
@@ -1835,16 +1883,16 @@ Get_Partition_Info() {
 	fa33) BST='Windows XP';;
 	fbc0) BST='ISOhybrid (Syslinux 3.81)';;
 
-	## If Grub,or Grub 2 is in the boot sector, investigate the embedded information. ##
-	48b4) BST='Grub2 (v1.96)';    
-	      core_loc ${part} '1.96';
-	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Core_Msg}";;
-	7c3c) BST='Grub2 (v1.97-1.98)';    
-	      core_loc ${part} '1.97';
-	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Core_Msg}";;
+	## If Grub or Grub 2 is in the boot sector, investigate the embedded information. ##
+	48b4) BST='Grub2 (v1.96)';
+	      grub2_info ${part} ${drive} '1.96';
+	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
+	7c3c) BST='Grub2 (v1.97-1.98)';
+	      grub2_info ${part} ${drive} '1.97';
+	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
 	0020) BST='Grub2 (v1.99)';
-	      core_loc ${part} '1.99';
-	      BSI="${BSI} Grub2 (v1.99) is installed in the boot sector of ${name} and ${Core_Msg}";;
+	      grub2_info ${part} ${drive} '1.99';
+	      BSI="${BSI} Grub2 (v1.99) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
  aa75 | 5272) BST='Grub Legacy';
 	      stage2_loc ${part};
 	      BSI="${BSI} Grub Legacy (v${Grub_Version}) is installed in the boot sector of ${name} and ${Stage2_Msg}";;
@@ -2160,10 +2208,10 @@ Get_Partition_Info() {
 		     case "${sig2}" in
 		       eb48) stage2_loc "${mountname}${file}${loader}";
 			     BFI="${BFI} Grub Legacy (v${Grub_Version}) in the file ${file}${loader} ${Stage2_Msg}";;
-		       eb4c) core_loc "${mountname}${file}${loader}" 1.96;
-			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Core_Msg}";;
-		       eb63) core_loc "${mountname}${file}${loader}" 1.99;
-			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Core_Msg}";;
+		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96;
+			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Grub2_Msg}";;
+		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99;
+			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Grub2_Msg}";;
 		     esac
 		  fi
 
@@ -2171,8 +2219,8 @@ Get_Partition_Info() {
 		  sig=$(hexdump -v -s 392 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
-		     core_loc "${mountname}${file}${loader}" 1.97;
-		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Core_Msg}"; 
+		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97;
+		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Grub2_Msg}"; 
 		  fi
 	       fi
 	     done	# End of loop through the files in a particular Boot_Code_Directory.
@@ -2421,28 +2469,9 @@ for HI in ${!HDName[@]} ; do
     eb4c) ## Grub2 (v1.96) is in the MBR. ##
 	  BL='Grub2 (v1.96)';
 
-	  # 0x44 contains the offset to the Core.
-	  offset=$(hexdump -v -s 68 -n 4 -e '"%u"' ${drive});
+	  grub2_info ${drive} ${drive} '1.96';
 
-	  if [ "${offset}" -ne 1 ] ; then
-	     # Grub2 (v1.96) is installed without Core. 
-	     core_loc ${drive} '1.96';
-	     Message="${Message} and ${Core_Msg}";
-	  else
-	     # Grub2 (v1.96) is installed with Core.
-	     Grub_String=$(hexdump -v -s 1056 -n 64 -e '"%_u"' ${drive});
-	     Core_Dir=$(echo "${Grub_String}" | sed 's/nul[^$]*//');
-	     pa=$(hexdump -v -s 1044 -n 1 -e '"%d"' ${drive});
-	     dr=$(hexdump -v -s 77 -n 1 -e '"%d"' ${drive});
-	     dr=$(( ${dr} - 127 ));
-	     pa=$(( ${pa} + 1 ));
-
-	     if [ "${dr}" -eq 128 ] ; then
-		Message="${Message} and looks on the same drive in partition #${pa} for ${Core_Dir}";
-	     else
-		Message="${Message} and looks on boot drive #${dr} in partition #${pa} for ${Core_Dir}";
-	     fi
-	  fi;;
+	  Message="${Message} and ${Grub2_Msg}";;
 
     eb63) ## Grub2 is in the MBR. ##
 	  case ${MBR_bytes80to81} in
@@ -2450,54 +2479,9 @@ for HI in ${!HDName[@]} ; do
 		0020) grub2_version='1.99'; BL='Grub2 (v1.99)';;
 	  esac
 
-	  # 0x5c contains the offset to the Core.
-	  offset=$(hexdump -v -s 92 -n 4 -e '"%u"' ${drive});
+	  grub2_info ${drive} ${drive} ${grub2_version};
 
-	  if [ "${offset}" -ne 1 ] ; then
-	     # Grub2 is installed without embedded Core.
-	     core_loc ${drive} ${grub2_version};
-	     Message="${Message} and ${Core_Msg}";
-	  else
-	     # Grub2 is installed with embedded Core.
-
-	     if [ ${grub2_version} = '1.99' ] ; then
-
-		# For Grub2 (v1.99), the Core_Dir is just at the beginning of the compressed part of core.img:
-		# 
-		# Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520+512 = 1032
-		# Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524+512 = 1036
-		# Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528+512 = 1040
-		# Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532+512 = 1044 --> only 1 byte needed
-
-		eval $(hexdump -v -s $((0x208 + 512)) -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1/1 "; install_dos_part=%d; "' ${drive});
-
-		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
-		eval $(hexdump -v -s 512 -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${drive} | \
-		   gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
-			else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 + 512 } }');
-
-		if [ ${offset_lzma} -ne 0 ] ; then
-		   # Make lzma header (13 bytes) and add lzma_stream:
-		   printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log}
-		   Core_Dir=$(dd if=${drive} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} | cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
-		fi
-
-	     else
-		# Grub2 (v1.97-1.98).
-		Core_Dir=$(hexdump -v -s 1052 -n 64 -e '"%_u"' ${drive} | sed 's/nul[^$]*//');
-	     fi
-
-	     pa=$(hexdump -v -s 1044 -n 1 -e '"%d"' ${drive});
-	     dr=$(hexdump -v -s 77 -n 1 -e '"%d"' ${drive});
-	     dr=$(( ${dr} - 127 ));
-	     pa=$(( ${pa} + 1 ));
-
-	     if [ ${pa} -eq 255 ] ; then
-	        Message="${Message} and looks for ${Core_Dir}";
-	     else
-	        Message="${Message} and looks on the same drive in partition #${pa} for ${Core_Dir}";
-	     fi
-	  fi;;
+	  Message="${Message} and ${Grub2_Msg}";;
 
     0ebe) BL='ThinkPad';;
     31c0) BL='Acer 3';;
