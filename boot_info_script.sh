@@ -1886,13 +1886,13 @@ Get_Partition_Info() {
 	## If Grub or Grub 2 is in the boot sector, investigate the embedded information. ##
 	48b4) BST='Grub2 (v1.96)';
 	      grub2_info ${part} ${drive} '1.96';
-	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
+	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	7c3c) BST='Grub2 (v1.97-1.98)';
 	      grub2_info ${part} ${drive} '1.97';
-	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
+	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	0020) BST='Grub2 (v1.99)';
 	      grub2_info ${part} ${drive} '1.99';
-	      BSI="${BSI} Grub2 (v1.99) is installed in the boot sector of ${name} and ${Grub2_Msg}";;
+	      BSI="${BSI} Grub2 (v1.99) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
  aa75 | 5272) BST='Grub Legacy';
 	      stage2_loc ${part};
 	      BSI="${BSI} Grub Legacy (v${Grub_Version}) is installed in the boot sector of ${name} and ${Stage2_Msg}";;
@@ -2209,9 +2209,9 @@ Get_Partition_Info() {
 		       eb48) stage2_loc "${mountname}${file}${loader}";
 			     BFI="${BFI} Grub Legacy (v${Grub_Version}) in the file ${file}${loader} ${Stage2_Msg}";;
 		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96;
-			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Grub2_Msg}";;
+			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Grub2_Msg}.";;
 		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99;
-			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Grub2_Msg}";;
+			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Grub2_Msg}.";;
 		     esac
 		  fi
 
@@ -2220,7 +2220,7 @@ Get_Partition_Info() {
 
 		  if [ "${sig}" = 'GRUB' ]; then
 		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97;
-		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Grub2_Msg}"; 
+		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Grub2_Msg}."; 
 		  fi
 	       fi
 	     done	# End of loop through the files in a particular Boot_Code_Directory.
