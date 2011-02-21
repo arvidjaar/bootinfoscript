@@ -2412,13 +2412,14 @@ for HI in ${!HDName[@]} ; do
   # Read the whole MBR in hexadecimal format.
   MBR_512=$(hexdump -v -n 512 -e '/1 "%02x"' ${drive});
 
-  ## Look at the first 2-4 bytes of the hard drive to identify the boot code installed in the MBR. ##
+  ## Look at the first 2,3,4 or 8 bytes of the hard drive to identify the boot code installed in the MBR. ##
   #
   #   If it is not enough, look at more bytes.
 
-  MBR_sig4="${MBR_512:0:8}";
-  MBR_sig3="${MBR_512:0:6}";
   MBR_sig2="${MBR_512:0:4}";
+  MBR_sig3="${MBR_512:0:6}";
+  MBR_sig4="${MBR_512:0:8}";
+  MBR_sig8="${MBR_512:0:16}";
 
   ## Bytes 0x80-0x81 of the MBR. ##
   #
@@ -2484,7 +2485,11 @@ for HI in ${!HDName[@]} ; do
 	  Message="${Message} and ${Grub2_Msg}";;
 
     0ebe) BL='ThinkPad';;
-    31c0) BL='Acer 3';;
+    31c0) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
+	  case ${MBR_sig8} in
+	    31c08ed0bc007c8e) BL='SUSE generic MBR';;
+	    31c08ed0bc007cfb) BL='Acer PQService MBR';;
+	  esac;;
     33c0) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig3} in
 	    33c08e) BL='Windows';;
