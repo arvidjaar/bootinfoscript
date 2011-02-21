@@ -1598,7 +1598,7 @@ grub2_info () {
 		# Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528
 		# Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532 --> only 1 byte needed (partition)
 
-		eval $(hexdump -v -s 520 -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1/1 "; partition=%d; "' ${core_img_file});
+		eval $(hexdump -v -s 520 -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1 "; partition=%d; "' ${core_img_file});
 
 		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
 		eval $(hexdump -v -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${core_img_file} | \
