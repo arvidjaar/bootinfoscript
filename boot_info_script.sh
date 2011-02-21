@@ -278,7 +278,6 @@ Programs='
 	sed
 	sort
 	umount
-	unlzma
 	wc
 	whoami'
 
@@ -1605,12 +1604,19 @@ grub2_info () {
 		       gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			     else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 } }');
 
-		if [ ${offset_lzma} -ne 0 ] ; then
-		   # Make lzma header (13 bytes), add lzma_stream, decompress it (unlzma) and extract the core_dir.
-		   printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log};
+		if [ $(type unlzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+		   if [ ${offset_lzma} -ne 0 ] ; then
+		      # Make lzma header (13 bytes), add lzma_stream, decompress it (unlzma) and extract the core_dir.
+		      printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log};
 
-		   core_dir=$(dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} \
-			    | cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
+		      core_dir=$(dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} \
+				| cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
+		   fi
+		else
+		   # When unlzma isn't available, we can't get the core_dir, but we still can show the other info.
+		   core_dir='??';
+
+		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "unlzma".' >> ${Error_Log};
 		fi
 
 	     else
