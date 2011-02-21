@@ -2052,7 +2052,7 @@ Get_Partition_Info() {
 
   case "${type}" in
 	'BIOS Boot partition'	) part_no_mount=1;;
-	'crypto_Luks'		) part_no_mount=1;;
+	'crypto_LUKS'		) part_no_mount=1;;
 	'Extended Partition'	) part_no_mount=1;;
 	'linux_raid_member'	) part_no_mount=1;;
 	'LVM2_member'		) part_no_mount=1;;
