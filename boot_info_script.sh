@@ -264,7 +264,6 @@ Programs='
 	fdisk
 	filefrag
 	fold
-	gawk
 	grep
 	gzip
 	hexdump
@@ -289,6 +288,31 @@ for Program in ${Programs} ; do
      Check_Prog=0;
   fi
 done
+
+
+
+## Do we have gawk? ##
+#
+#   If we don't have gawk, look for "busybox awk".
+#
+
+# Set awk binary to gawk.
+AWK='gawk';
+
+if [ $(type gawk > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
+   # Do we have a busybox binary? And if we have one, does is support "awk"?
+   if [ $(type busybox > /dev/null 2>&1 ; echo $?) -eq 0 ] && [ $(echo 'test' | busybox awk '{ print $0 }' > /dev/null 2>&1; echo $?) -eq 0 ] ; then
+      printf '\n"gawk" could not be found, using "busybox awk" instead.\nThis may lead to unreliable results.\n\n' >&2;
+
+      # Set awk binary to busybox's awk.
+      AWK='busybox awk';
+   else
+      echo '"gawk" could not be found.' >&2;
+      Check_Prog=0;
+   fi
+fi
+
+
 
 if [ ${Check_Prog} -eq 0 ] ; then
    printf '\nPlease install the missing program(s) and run boot_info_script again.\n' >&2;
@@ -586,7 +610,7 @@ if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
   fi
 
   if [ x"$(dmraid -sa -c)" != x"no raid disks" ] ; then
-     All_DMRaid=$(dmraid -sa -c | gawk '{ print "/dev/mapper/"$0 }');
+     All_DMRaid=$(dmraid -sa -c | ${AWK} '{ print "/dev/mapper/"$0 }');
      All_Hard_Drives="${All_Hard_Drives} ${All_DMRaid}";
   fi  
 fi
@@ -643,7 +667,7 @@ fdisks () {
 
 # list of mountpoints for devices: also allow mount points with spaces.
 
-MountPoints=$(mount | gawk -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
+MountPoints=$(mount | ${AWK} -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
 
 
 FileNotMounted () {	
@@ -1343,7 +1367,7 @@ syslinux_info () {
 	#
 	# Start searching for this hex string after the DOS superblock: byte 0x5a = 90
 	eval $(echo ${LDLINUX_BSS:$((180)):844} \
-		| gawk '{ mask_offset=match($0,"66b8........66ba........bb00"); \
+		| ${AWK} '{ mask_offset=match($0,"66b8........66ba........bb00"); \
 		if (mask_offset == "0") { print "sect1ptr0_offset=0;" } \
 		else { print "sect1ptr0_offset=" (mask_offset -1 ) / 2 + 2 + 90 } }');
 
@@ -1432,7 +1456,7 @@ syslinux_info () {
        #  - the value of the checksum after adding all dwords of ldlinux.sys should be 0.
 
        if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
-	    | gawk 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
+	    | ${AWK} 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
 
 	  Syslinux_Msg="${Syslinux_Msg} Integrity check of Syslinux failed.";
 	  return;
@@ -1601,7 +1625,7 @@ grub2_info () {
 
 		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
 		eval $(hexdump -v -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${core_img_file} | \
-		       gawk '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
+		       ${AWK} '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			     else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 } }');
 
 		if [ $(type unlzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
@@ -1671,7 +1695,7 @@ get_embedded_menu () {
 
      # Calcutate the exact offset to the embedded menu.
      offset_menu=$(( ( ${offset_menu%:*} / 2 ) + 16 ));
-	 dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | gawk 'BEGIN { RS="\0" } { if (NR == 1) print $0 }' >> "${Log1}";
+	 dd if="${source}" count=1 skip=1 bs=${offset_menu} 2>> ${Trash} | ${AWK} 'BEGIN { RS="\0" } { if (NR == 1) print $0 }' >> "${Log1}";
 
      echo '--------------------------------------------------------------------------------' >> "${Log1}";
   fi
@@ -1705,7 +1729,7 @@ last_block_of_file () {
        # For the newer version, we can also get the number of file fragments.
 
        eval $(filefrag -v "${file}" \
-	     | gawk -F ' ' 'BEGIN { blocksize=0; expected=0; extents=1; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_old="false"; last_block=0 } \
+	     | ${AWK} -F ' ' 'BEGIN { blocksize=0; expected=0; extents=1; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_old="false"; last_block=0 } \
 		{ if ( $1 == "Blocksize" ) { blocksize=$6; filefrag_old="true" }; \
 		if ( filefrag_old == "true" ) { \
 			if ( $1$2 ~ "LastBlock:" ) { print $3 }; \
@@ -2067,7 +2091,7 @@ Get_Partition_Info() {
   esac
 
   if [ "${part_no_mount}" -eq 0 ] ; then
-     CheckMount=$(mount | gawk -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
+     CheckMount=$(mount | ${AWK} -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
 
      # Check whether partition is already mounted.
      if [ x"${CheckMount}" != x'' ] ; then 
@@ -2142,7 +2166,7 @@ Get_Partition_Info() {
 	## Search for Wubi partitions. ##
 
 	if [ -f "${mountname}/ubuntu/disks/root.disk" ] ; then          
-	   Wubi=$(losetup -a | gawk '$3 ~ "(/host/ubuntu/disks/root.disk)" { print $1; exit }' | sed 's/.$//' );
+	   Wubi=$(losetup -a | ${AWK} '$3 ~ "(/host/ubuntu/disks/root.disk)" { print $1; exit }' | sed 's/.$//' );
 
 	   # check whether Wubi already has a loop device.
 	   if [[ x"${Wubi}" = x'' ]] ; then
@@ -2383,7 +2407,7 @@ for drive in ${All_Hard_Drives} ; do
 	HDSize[${HI}]=${size};
 
 	# Get and set HDHead[${HI}], HDTrack[${HI}] and HDCylinder[${HI}] all at once.
-	eval $(fdisk -lu ${drive} 2>> ${Trash} | gawk -F ' ' '$2 ~ "head" { print "HDHead['${HI}']=" $1 "; HDTrack['${HI}']=" $3 "; HDCylinder['${HI}']=" $5 }' );
+	eval $(fdisk -lu ${drive} 2>> ${Trash} | ${AWK} -F ' ' '$2 ~ "head" { print "HDHead['${HI}']=" $1 "; HDTrack['${HI}']=" $3 "; HDCylinder['${HI}']=" $5 }' );
 
 	# Look at the first 4 bytes of the second sector to identify the partition table type.
 	case $(hexdump -v -s 512 -n 4 -e '"%_u"' ${drive}) in
@@ -2456,7 +2480,7 @@ for HI in ${!HDName[@]} ; do
 	     tmp="/${Grub_String#*/}";
 	     tmp="${tmp%%nul*}";
 
-	     eval $(echo ${tmp} | gawk '{ print "stage=" $1 "; menu=" $2 }');
+	     eval $(echo ${tmp} | ${AWK} '{ print "stage=" $1 "; menu=" $2 }');
 
 	     [[ x"$menu" = x'' ]] || stage="${stage} and ${menu}";
 
@@ -2684,11 +2708,11 @@ fi
 
 if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
 
-  LVM_Partitions=$(lvscan | gawk '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
+  LVM_Partitions=$(lvscan | ${AWK} '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
 
   for LVM in ${LVM_Partitions}; do 
-    LVM_Size=$(lvdisplay -c ${LVM} | gawk -F ':' '{ print $7 }');
-    LVM_Status=$(lvdisplay ${LVM} | gawk '$0 ~ "LV Status" { print $3 }');
+    LVM_Size=$(lvdisplay -c ${LVM} | ${AWK} -F ':' '{ print $7 }');
+    LVM_Status=$(lvdisplay ${LVM} | ${AWK} '$0 ~ "LV Status" { print $3 }');
     lvchange -ay ${LVM};
     name=${LVM:12};
     mountname="LVM/${name}";
@@ -2715,13 +2739,13 @@ fi
 if [ $(type mdadm >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
 
   # All arrays which are already assembled.
-  MD_Active_Array=$(mdadm --detail --scan | gawk '{ print $2 }');
+  MD_Active_Array=$(mdadm --detail --scan | ${AWK} '{ print $2 }');
 
   # Assemble all arrays.
   mdadm --assemble --scan;
   
   # All arrays.
-  MD_Array=$(mdadm --detail --scan | gawk '{ print $2 }');
+  MD_Array=$(mdadm --detail --scan | ${AWK} '{ print $2 }');
 
   for MD in ${MD_Array}; do
     MD_Size=$(fdisks ${MD});     # size in blocks
@@ -2817,7 +2841,7 @@ printf "${MountFormat}\n" 'Device' 'Mount_Point' 'Type' 'Options' >> "${Log}";
 #  new:
 #    mount | sort | gawk -F "\t" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
 
-mount | sort | gawk -F "\t" '$0 ~ "^/dev" \
+mount | sort | ${AWK} -F "\t" '$0 ~ "^/dev" \
   { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); \
     printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } END { printf "\n" }' >> "${Log}";
 
