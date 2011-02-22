@@ -296,8 +296,12 @@ done
 #   If we don't have gawk, look for "busybox awk".
 #
 
+# Make a variable named ${TAB}, needed for setting the separator for awk to a tab.
+TAB=$(printf "\t");
+
 # Set awk binary to gawk.
 AWK='gawk';
+
 
 if [ $(type gawk > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
    # Do we have a busybox binary? And if we have one, does is support "awk"?
@@ -667,7 +671,7 @@ fdisks () {
 
 # list of mountpoints for devices: also allow mount points with spaces.
 
-MountPoints=$(mount | ${AWK} -F "\t" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
+MountPoints=$(mount | ${AWK} -F "${TAB}" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
 
 
 FileNotMounted () {	
@@ -2091,7 +2095,7 @@ Get_Partition_Info() {
   esac
 
   if [ "${part_no_mount}" -eq 0 ] ; then
-     CheckMount=$(mount | ${AWK} -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
+     CheckMount=$(mount | ${AWK} -F "${TAB}" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
 
      # Check whether partition is already mounted.
      if [ x"${CheckMount}" != x'' ] ; then 
@@ -2839,9 +2843,9 @@ printf "${MountFormat}\n" 'Device' 'Mount_Point' 'Type' 'Options' >> "${Log}";
 #  original:
 #    mount | grep ' / '| grep -v '^/'| sed  's/ on /'$Fis'/' |sed 's/ type /'$Fis'/'|sed  's/ (/'$Fis'(/'| gawk -F $Fis '{printf "'"$MountFormat"'", $1, $2, $3, $4 }'>>"$Log";
 #  new:
-#    mount | sort | gawk -F "\t" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
+#    mount | sort | gawk -F "${TAB}" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
 
-mount | sort | ${AWK} -F "\t" '$0 ~ "^/dev" \
+mount | sort | ${AWK} -F "${TAB}" '$0 ~ "^/dev" \
   { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); \
     printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } END { printf "\n" }' >> "${Log}";
 
