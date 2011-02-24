@@ -304,13 +304,20 @@ AWK='gawk';
 
 
 if [ $(type gawk > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
-   # Do we have a busybox binary? And if we have one, does is support "awk"?
-   if [ $(type busybox > /dev/null 2>&1 ; echo $?) -eq 0 ] && [ $(echo 'test' | busybox awk '{ print $0 }' > /dev/null 2>&1; echo $?) -eq 0 ] ; then
-      printf '\n"gawk" could not be found, using "busybox awk" instead.\nThis may lead to unreliable results.\n\n' >&2;
+   # Do we have a busybox version?
+   for BUSYBOX in 'busybox' '/usr/lib/initramfs-tools/bin/busybox' ; do
+     # And if we have one, does is support "awk"?
+     if [ $(type ${BUSYBOX} > /dev/null 2>&1 ; echo $?) -eq 0 ] && [ $(echo 'test' | ${BUSYBOX} awk '{ print $0 }' > /dev/null 2>&1; echo $?) -eq 0 ] ; then
+	printf '\n"gawk" could not be found, using "%s awk" instead.\nThis may lead to unreliable results.\n\n' "${BUSYBOX}" >&2;
 
-      # Set awk binary to busybox's awk.
-      AWK='busybox awk';
-   else
+	# Set awk binary to busybox's awk.
+	AWK="${BUSYBOX} awk";
+	break;
+     fi
+   done
+
+   # If no busybox (or one without awk support) is found, "${AWK}" is still set to "gawk".
+   if [ "${AWK}" == 'gawk' ] ; then
       echo '"gawk" could not be found.' >&2;
       Check_Prog=0;
    fi
