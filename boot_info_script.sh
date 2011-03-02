@@ -1354,7 +1354,7 @@ syslinux_info () {
 
      # sect1ptr0_offset: bitwise XOR of bytes 508-509 with 0x1b << 9 gives offset
      # (in bytes) to the location where sect1ptr0 is stored.
-     sect1ptr0_offset=$(( 0x"${LDLINUX_BSS:1016:4}" ^ ( 0x1b << 9 ) ));
+     sect1ptr0_offset=$(( 0x${LDLINUX_BSS:1016:4} ^ ( 0x1b << 9 ) ));
 
      # Get "boot sector offset" (in sectors) of sector 1 ptr LSW: sect1ptr0
      # Get "boot sector offset" (in sectors) of sector 1 ptr MSW: sect1ptr1
