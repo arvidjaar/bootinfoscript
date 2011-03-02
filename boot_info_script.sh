@@ -1352,9 +1352,10 @@ syslinux_info () {
      # Syslinux 4.04-pre5 and higher.
      pa_version=4;	 # Syslinux 4.xx patch area
 
-     # sect1ptr0_offset: bitwise XOR of bytes 508-509 with 0x1b << 9 gives offset
-     # (in bytes) to the location where sect1ptr0 is stored.
-     sect1ptr0_offset=$(( 0x${LDLINUX_BSS:1016:4} ^ ( 0x1b << 9 ) ));
+     # The offset of Sect1Load in LDLINUX_BSS can be found by doing a
+     # bitwise XOR of bytes 508-509 (little endian) with 0x1b << 9.
+     # sect1ptr0_offset starts 2 bytes furter than Sect1Load.
+     sect1ptr0_offset=$(( ( 0x${LDLINUX_BSS:1018:2}${LDLINUX_BSS:1016:2} ^ ( 0x1b << 9 ) ) + 2 ));
 
      # Get "boot sector offset" (in sectors) of sector 1 ptr LSW: sect1ptr0
      # Get "boot sector offset" (in sectors) of sector 1 ptr MSW: sect1ptr1
