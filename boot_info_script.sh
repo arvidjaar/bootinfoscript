@@ -1378,7 +1378,7 @@ syslinux_info () {
 	#         [sect1ptr0]       [sect1ptr1]
 	#
 	# Start searching for this hex string after the DOS superblock: byte 0x5a = 90
-	eval $(echo ${LDLINUX_BSS:$((180)):844} \
+	eval $(echo ${LDLINUX_BSS:180:844} \
 		| ${AWK} '{ mask_offset=match($0,"66b8........66ba........bb00"); \
 		if (mask_offset == "0") { print "sect1ptr0_offset=0;" } \
 		else { print "sect1ptr0_offset=" (mask_offset -1 ) / 2 + 2 + 90 } }');
