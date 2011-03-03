@@ -1461,6 +1461,15 @@ syslinux_info () {
        fi       
 
 
+       # Get "SYSLINUX - version - date" string.
+       syslinux_version=$(hexdump -v -e '"%_p"' -s 2 -n $(( ${magic_offset} - 2 )) ${Tmp_Log});
+       syslinux_version="${syslinux_version% \.*}";
+
+       # Overwrite the "boot sector type" variable set before calling this function,
+       # with a more exact Syslinux version number.
+       BST="${syslinux_version}";
+
+
        # Check integrity of Syslinux:
        #  - Checksum starting at ldlinux.sys, stopping before the ADV part.
        #  - checksum start = LDLINUX_MAGIC - [sum of dwords].
@@ -1473,15 +1482,6 @@ syslinux_info () {
 	  Syslinux_Msg="${Syslinux_Msg} Integrity check of Syslinux failed.";
 	  return;
        fi
-
-
-       # Get "SYSLINUX - version - date" string.
-       syslinux_version=$(hexdump -v -e '"%_p"' -s 2 -n $(( ${magic_offset} - 2 )) ${Tmp_Log});
-       syslinux_version="${syslinux_version% \.*}";
-
-       # Overwrite the "boot sector type" variable set before calling this function,
-       # with a more exact Syslinux version number.
-       BST="${syslinux_version}";
 
 
        if [ ${pa_version} -eq 4 ] ; then
