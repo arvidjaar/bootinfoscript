@@ -583,20 +583,26 @@ Folder=${Folder}${i};
 ## Create temporary filenames. ##
 
 cd ${Folder}
-Log=${Folder}/Log		  # File to record the summary.
-Log1=${Folder}/Log1		  # Most of the information which is not part of
-				  # the summary is recorded in this file.
-Error_Log=${Folder}/Error_Log	  # File to catch all unusal Standar Errors.
-Trash=${Folder}/Trash		  # File to catch all usual Standard Errors these
-				  # messagges will not be included in the RESULTS.
-Mount_Error=${Folder}/Mount_Error # File to catch Mounting Errors.
-Unknown_MBR=${Folder}/Unknown_MBR # File to record all unknown MBR and Boot sectors.
-Tmp_Log=${Folder}/Tmp_Log	  # File to temporarily hold some information.
-core_img_file=${Folder}/core_img  # File to temporarily store an embedded core.img of grub2.
-PartitionTable=${Folder}/PT	  # File to store the Partition Table.
-FakeHardDrives=${Folder}/FakeHD   # File to list devices which seem to have  no corresponding drive.
-BLKID=${Folder}/BLKID		  # File to store the output of blkid.
-exec 2> ${Error_Log}		  # Redirect all standard error to the file Error_Log.
+Log=${Folder}/Log				# File to record the summary.
+Log1=${Folder}/Log1				# Most of the information which is not part of
+						# the summary is recorded in this file.
+Error_Log=${Folder}/Error_Log			# File to catch all unusal Standar Errors.
+Trash=${Folder}/Trash				# File to catch all usual Standard Errors these
+						# messagges will not be included in the RESULTS.
+Mount_Error=${Folder}/Mount_Error		# File to catch Mounting Errors.
+Unknown_MBR=${Folder}/Unknown_MBR		# File to record all unknown MBR and Boot sectors.
+Tmp_Log=${Folder}/Tmp_Log			# File to temporarily hold some information.
+core_img_file=${Folder}/core_img		# File to temporarily store an embedded core.img of grub2.
+core_img_file_unlzma=${Folder}/core_img_unlzma	# File to temporarily store the uncompressed part of core.img of grub2.
+PartitionTable=${Folder}/PT			# File to store the Partition Table.
+FakeHardDrives=${Folder}/FakeHD			# File to list devices which seem to have  no corresponding drive.
+BLKID=${Folder}/BLKID				# File to store the output of blkid.
+
+
+
+## Redirect all standard error to the file Error_Log. ##
+
+exec 2> ${Error_Log};
 
 
 
@@ -1578,14 +1584,19 @@ stage2_loc () {
 
 ## Grub2 ##
 #
-#   Determine the embeded location of core.img for a Grub2 boot.img file,
-#   look for the core.img and the path of the grub2 directory.
+#   Determine the (embeded) location of core.img for a Grub2 boot.img file,
+#   determine the path of the grub2 directory and look for an embedded config file.
 #
 
 grub2_info () {
   local stage1="$1" hdd="$2" grub2_version="$3";
+
   local sector_offset drive_offset directory_offset sector_nr drive_nr drive_nr_hex;
-  local partition core_dir HI magic core_img_found=0;
+  local partition core_dir embedded_config HI magic core_img_found=0 embedded_config_found=0;
+  local total_module_size kernel_image_size compressed_size offset_lzma lzma_uncompressed_size;
+  local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
+  local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
+
 
   case "${grub2_version}" in
     1.96) sector_offset='68';  drive_offset='76'; directory_offset='553';;
@@ -1628,25 +1639,69 @@ grub2_info () {
 
 		# For Grub2 (v1.99), the core_dir is just at the beginning of the compressed part of core.img:
 		# 
-		# Get grub_core_uncompressed    : byte 0x208-0x20b of embedded core.img ==> byte 520
-		# Get grub_modules_uncompressed : byte 0x20c-0x20f of embedded core.img ==> byte 524
-		# Get grub_core_compressed      : byte 0x210-0x213 of embedded core.img ==> byte 528
-		# Get grub_install_dos_part     : byte 0x214-0x218 of embedded core.img ==> byte 532 --> only 1 byte needed (partition)
+		# Get grub_total_module_size	: byte 0x208-0x20b of embedded core.img ==> byte 520
+		# Get grub_kernel_image_size	: byte 0x20c-0x20f of embedded core.img ==> byte 524
+		# Get grub_compressed_size	: byte 0x210-0x213 of embedded core.img ==> byte 528
+		# Get grub_install_dos_part	: byte 0x214-0x218 of embedded core.img ==> byte 532 --> only 1 byte needed (partition)
 
-		eval $(hexdump -v -s 520 -n 13 -e '1/4 "core_uncompressed=" "%x; " 1/4 "modules_uncompressed=%x; core_compressed=" 4/1 "#x%02x" 1 "; partition=%d; "' ${core_img_file});
+		eval $(hexdump -v -s 520 -n 13 -e '1/4 "total_module_size=%u; " 1/4 "kernel_image_size=%u; " 1/4 "compressed_size=%u; " 1 "partition=%d;"' ${core_img_file});
+
 
 		# Scan for "d1 e9 df fe ff ff 00 00": last 8 bytes of lzma_decode to find the offset of the lzma_stream.
-		eval $(hexdump -v -n $((0x${core_uncompressed})) -e '1/1 "%02x"' ${core_img_file} | \
+		eval $(hexdump -v -n ${kernel_image_size} -e '1/1 "%02x"' ${core_img_file} | \
 		       ${AWK} '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			     else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 } }');
 
 		if [ $(type unlzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
 		   if [ ${offset_lzma} -ne 0 ] ; then
-		      # Make lzma header (13 bytes), add lzma_stream, decompress it (unlzma) and extract the core_dir.
-		      printf "\x5d\x00\x00\x01\x00${core_compressed//#/\\}\x00\x00\x00\x00" > ${Tmp_Log};
 
-		      core_dir=$(dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((0x${core_uncompressed} / ${offset_lzma} + 1)) 2>> ${Trash} \
-				| cat ${Tmp_Log} - | unlzma | hexdump -v -n 64 -e '"%_u"' | sed 's/nul[^$]*//');
+		      # Calculate the uncompressed size to which the compressed lzma stream needs to be expanded. 
+		      lzma_uncompressed_size=$(( ${total_module_size} + ${kernel_image_size} - ${offset_lzma} + 512 ));
+
+		      # Make lzma header (13 bytes): ${lzma_uncompressed_size} must be displayed in little endian format.
+		      printf '\x5d\x00\x00\x01\x00'$( printf '%08x' $((${total_uncompressed_size} - ${offset_lzma} + 512 ))  | awk '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
+
+		      # Get lzma_stream, add it after the lzma header and decompress it (unlzma).
+		      dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((${lzma_uncompressed_size} / ${offset_lzma} + 1)) 2>> ${Trash} \
+			 | cat ${Tmp_Log} - | unlzma > ${core_img_file_unlzma};
+
+		      # Get core dir.
+		      core_dir=$( hexdump -v -n 64 -e '"%_c"' ${core_img_file_unlzma} );
+		      # Remove "\0"s at the end.
+		      core_dir="${core_dir%%\\0*}";
+
+
+		      # Offset of the grub_module_info structure in the uncompressed part.
+		      grub_module_info_offset=$(( ${kernel_image_size} - ${offset_lzma} + 512 ));
+
+		      eval $(hexdump -v -n 12 -s ${grub_module_info_offset} -e '"grub_module_magic=" 4/1 "%_c" 1/4 "; grub_modules_offset=%u; " 1/4 "grub_modules_size=%u;"' ${core_img_file_unlzma});
+
+		      # Check for the existence of the grub_module_magic.
+		      if [ x"${grub_module_magic}" = x'mimg' ] ; then
+			 # Embedded grub modules found.
+			 grub_modules_end_offset=$(( ${grub_module_info_offset} + ${grub_modules_size} ));
+			 grub_module_header_offset=$(( ${grub_module_info_offset} + ${grub_modules_offset} ));
+
+			 # Traverse through the list of modules and check if it is a config module.
+			 while [ ${grub_module_header_offset} -lt ${grub_modules_end_offset} ] ; do
+
+			   eval $(hexdump -v -n 8 -s ${grub_module_header_offset} -e '1/4 "grub_module_type=%u; " 1/4 "grub_module_size=%u;"' ${core_img_file_unlzma});
+
+			   if [ ${grub_module_type} -eq 2 ] ; then
+			      # This module is an embedded config file.
+			      embedded_config_found=1;
+
+			      embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} );
+			      # Remove "\0" at the end.
+			      embedded_config=$( printf "${embedded_config%\\0}" );
+
+			      break;
+			   fi
+
+			   grub_module_header_offset=$(( ${grub_module_header_offset} + ${grub_module_size} ));
+
+			done
+		     fi		      
 		   fi
 		else
 		   # When unlzma isn't available, we can't get the core_dir, but we still can show the other info.
@@ -1676,10 +1731,20 @@ grub2_info () {
 
      partition=$(( ${partition} + 1 ));
 
-     if [ ${partition} -eq 255 ] ; then
-	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
+     if [ ${embedded_config_found} -eq 0 ] ; then
+	# No embedded config file found.
+
+	if [ ${partition} -eq 255 ] ; then
+	   Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
+	else
+	   Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
+	fi
+
      else
-	Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
+	# Embedded config file found.
+
+	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}--------------------------------------------------------------------------------\n");
+
      fi
   fi
 }
