@@ -1600,14 +1600,16 @@ grub2_info () {
 
   case "${grub2_version}" in
     1.96) sector_offset='68';  drive_offset='76'; directory_offset='553';;
-    1.97) sector_offset='92';  drive_offset='91'; directory_offset='540';;
-    1.99) sector_offset='92';  drive_offset='91';;
+    1.97) sector_offset='92';  drive_offset='100'; directory_offset='540';;
+    1.99) sector_offset='92';  drive_offset='100';;
   esac
 
   # Offset to core.img (in sectors).
   sector_nr=$(hexdump -v -s ${sector_offset} -n 4 -e '4 "%u"' "${stage1}" 2>> ${Trash});
 
-  # BIOS drive number on which grub2 looks for its second stage (=core.img).
+  # BIOS drive number on which grub2 looks for its second stage (=core.img):
+  #   - "0xff" means that grub2 will use the BIOS drive number passed via the DL register.
+  #   - if this value isn't "0xff", that value will used instead.
   drive_nr_hex=$(hexdump -v -s ${drive_offset} -n 1 -e '"0x%02x"' "${stage1}" 2>> ${Trash});
   drive_nr=$(( ${drive_nr_hex} - 127 ));
 
@@ -1723,11 +1725,15 @@ grub2_info () {
 
   if [ ${core_img_found} -eq 0 ] ; then
      # core.img not found.
-     Grub2_Msg="${Grub2_Msg}, but core.img can not be found at this location"; 
+     Grub2_Msg="${Grub2_Msg}, but core.img can not be found at this location";
   else
-     # core.img found.            
+     # core.img found.
 
-     Grub2_Msg="${Grub2_Msg}. core.img is at this location on BIOS drive ${drive_nr} (${drive_nr_hex})";
+     if [ "${drive_nr_hex}" != '0xff' ] ; then
+	Grub2_Msg="${Grub2_Msg}. Grub2 is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
+     fi
+
+     Grub2_Msg="${Grub2_Msg}. core.img is at this location"
 
      partition=$(( ${partition} + 1 ));
 
