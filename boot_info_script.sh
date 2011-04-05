@@ -1345,7 +1345,7 @@ syslinux_info () {
   # Extended patch area variables:
   local epa_size epa_hexdump_format epa_advptroffset epa_diroffset epa_dirlen;
   local epa_subvoloffset epa_subvollen epa_secptroffset epa_secptrcnt;
-  local epa_sect1ptr0 epa_sect1ptr1 epa_raidpatch;
+  local epa_sect1ptr0 epa_sect1ptr1 epa_raidpatch epa_syslinuxbanner;
 
   # Clear previous Syslinux message string.
   Syslinux_Msg='';
@@ -1467,11 +1467,11 @@ syslinux_info () {
        fi       
 
 
-       # Get "SYSLINUX - version - date" string.
+       # Get the "SYSLINUX - version - date" string.
        syslinux_version=$(hexdump -v -e '"%_p"' -s 2 -n $(( ${magic_offset} - 2 )) ${Tmp_Log});
        syslinux_version="${syslinux_version% \.*}";
 
-       # Overwrite the "boot sector type" variable set before calling this function,
+       # Overwrite the "boot sector type" variable, which was set before calling this function,
        # with a more exact Syslinux version number.
        BST="${syslinux_version}";
 
@@ -1491,20 +1491,45 @@ syslinux_info () {
 
 
        if [ ${pa_version} -eq 4 ] ; then
-	  # Extended patch area size: 10*2 = 20 bytes
-	  epa_size='20';
+	  # Extended patch area size: 11*2 = 22 bytes
+	  epa_size='22';
 
 	  # Get epa_advptroffset, epa_diroffset, epa_dirlen, epa_subvoloffset, epa_subvollen,
 	  # epa_secptroffset, epa_secptrcnt, epa_sect1ptr0, epa_sect1ptr1 and epa_raidpatch.
-	  epa_hexdump_format='1/2 "epa_advptroffset=%u; " 1/2 "epa_diroffset=%u; " 1/2 "epa_dirlen=%u; " 1/2 "epa_subvoloffset=%u; " 1/2 "epa_subvollen=%u; " 1/2 "epa_secptroffset=%u; " 1/2 "epa_secptrcnt=%u; " 1/2 "epa_sect1ptr0=%u; " 1/2 "epa_sect1ptr1=%u; " 1/2 "epa_raidpatch=%u;"';
+	  epa_hexdump_format='1/2 "epa_advptroffset=%u; " 1/2 "epa_diroffset=%u; " 1/2 "epa_dirlen=%u; " 1/2 "epa_subvoloffset=%u; " 1/2 "epa_subvollen=%u; " 1/2 "epa_secptroffset=%u; " 1/2 "epa_secptrcnt=%u; " 1/2 "epa_sect1ptr0=%u; " 1/2 "epa_sect1ptr1=%u; " 1/2 "epa_raidpatch=%u; " 1/2 "epa_syslinuxbanner=%u;"';
 
 	  eval $(hexdump -v -s ${pa_epaoffset} -n ${epa_size} -e "${epa_hexdump_format}" ${Tmp_Log});
 
 	  # Get the Syslinux install directory.
-	  syslinux_dir=$(hexdump -v  -e '"%_p"' -s ${epa_diroffset} -n ${epa_dirlen} ${Tmp_Log});
+	  syslinux_dir=$(hexdump -v -e '"%_p"' -s ${epa_diroffset} -n ${epa_dirlen} ${Tmp_Log});
 	  syslinux_dir=${syslinux_dir%%\.*};
 
 	  Syslinux_Msg="${Syslinux_Msg} ${syslinux_version:0:8} is installed in the ${syslinux_dir} directory.";
+
+
+	  # In Syslinux 4.04 and higher, the whole Syslinux banner is not in the first sector of ldlinux.sys.
+	  # Only the "SYSLINUX - version" string is still located in the first sector.
+	  # epa_syslinuxbanner points to the whole "SYSLINUX - version - date" string.
+
+	  if [ ${epa_syslinuxbanner} -lt $(( ${pa_data_sectors} * 512 )) ] ; then
+	     # Get the "SYSLINUX - version - date" string.
+	     tmp=$(hexdump -v -e '"%_p"' -s $(( ${epa_syslinuxbanner} + 2 )) -n 100 ${Tmp_Log});
+
+
+	     # Check if we have Syslinux 4.04 or higher, which suppport the epa_syslinuxbanner field
+	     # by comparing the first 8 bytes ("SYSLINUX") of the Syslinux banner from sector 1 with
+	     # the 8 bytes to which epa_syslinuxbanner points.
+
+	     if [ x"${tmp:0:8}" = x"${syslinux_version:0:8}" ] ; then
+	        syslinux_version="${tmp%%\.No DEFAULT*}";
+
+	        # Overwrite the "boot sector type" variable, which was set before calling this function,
+	        # with a more exact Syslinux version number.
+	        BST="${syslinux_version}";
+	     fi
+	  fi
+
+
        fi
 
        return;
