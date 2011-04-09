@@ -1336,16 +1336,30 @@ syslinux_info () {
   # Magic number used by Syslinux:
   local LDLINUX_MAGIC='fe02b23e';
 
-  local LDLINUX_BSS LDLINUX_SECTOR2 sect1ptr0_offset sect1ptr0 sect1ptr1 tmp;
+  local LDLINUX_BSS LDLINUX_SECTOR2 ADV_2SECTORS;
+  local sect1ptr0_offset sect1ptr0 sect1ptr1 tmp;
   local magic_offset syslinux_version syslinux_dir;
+
   # Patch area variables:
   local pa_version pa_size pa_hexdump_format pa_magic pa_instance pa_data_sectors;
   local pa_adv_sectors pa_dwords pa_checksum pa_maxtransfer pa_epaoffset;
   local pa_ldl_sectors pa_dir_inode;
+
   # Extended patch area variables:
   local epa_size epa_hexdump_format epa_advptroffset epa_diroffset epa_dirlen;
   local epa_subvoloffset epa_subvollen epa_secptroffset epa_secptrcnt;
   local epa_sect1ptr0 epa_sect1ptr1 epa_raidpatch epa_syslinuxbanner;
+
+  # ADV magic numbers:
+  local ADV_MAGIC_HEAD='a52f2d5a';		# Head signature
+  local ADV_MAGIC_TAIL='64bf28dd';		# Tail signature
+  local ADV_MAGIC_CHECKSUM=$((0xa3041767));	# Magic used for calculation ADV checksum
+
+  # ADV variables:
+  local ADVoffset ADV_calculated_checksum ADV_read_checksum ADVentry_offset;
+  local tag='999' tag_len label;
+
+
 
   # Clear previous Syslinux message string.
   Syslinux_Msg='';
@@ -1485,7 +1499,7 @@ syslinux_info () {
        if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
 	    | ${AWK} 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
 
-	  Syslinux_Msg="${Syslinux_Msg} Integrity check of Syslinux failed.";
+	  Syslinux_Msg="${Syslinux_Msg} The integrity check of Syslinux failed.";
 	  return;
        fi
 
@@ -1530,6 +1544,73 @@ syslinux_info () {
 	  fi
 
 
+
+	  # ADV stuff starts here.
+
+	  if [ ${pa_adv_sectors} -ne 2 ] ; then
+	     Syslinux_Msg="${Syslinux_Msg} There are ${pa_adv_sectors} ADV sectors instead of 2.";
+	     return;
+	  fi
+
+	  # Get the ADV offset.
+	  ADVoffset=$(( pa_data_sectors * 512 ));
+
+	  # Get the ADV.
+	  ADV_2SECTORS=$(hexdump -v -s ${ADVoffset} -n 1024 -e '/1 "%02x"' ${Tmp_Log});
+
+	  # Check if the 2 ADV sectors are exactly the same.
+	  if [ "${ADV_2SECTORS:0:1024}" != "${ADV_2SECTORS:1024:1024}" ] ; then
+	     Syslinux_Msg="${Syslinux_Msg} The 2 ADV sectors are not the same (corrupt).";
+	     return;
+	  fi
+
+	  # Check if the ADV area contains the ADV head and tail magic.
+	  if ( [ "${ADV_2SECTORS:0:8}" = "${ADV_MAGIC_HEAD}" ] && [ "${ADV_2SECTORS:1016:8}" = "${ADV_MAGIC_TAIL}" ] ) ; then
+
+	     # Caculate the ADV checksum.
+	     ADV_calculated_checksum=$(hexdump -v -s $(( ${ADVoffset} + 8 )) -n $((512 - 3*4)) -e '/4 "%u\n"' ${Tmp_Log} \
+				     | awk 'BEGIN { csum='${ADV_MAGIC_CHECKSUM}' } { csum=(csum - $1 + 4294967296)%4294967296 } END { print csum }');
+
+	     ADV_read_checksum=$(hexdump -s $(( ${ADVoffset} + 4 )) -n 4 -e '/4 "%u\n"' ${Tmp_Log});
+
+
+	     if [ ${ADV_calculated_checksum} -eq ${ADV_read_checksum} ] ; then 
+
+		# Get the info stored in the ADV area:
+		#
+		# maximum 2 entries can be stored in the ADV, which have the following layout:
+		#   - byte 1		     : tag	==> 0 = no entry, 1 = boot-once entry, 2 = menu-save entry
+		#   - byte 2		     : tag_len	==> length of label string
+		#   - byte 3 - (3 + tag_len) : label	==> label name that will be used
+
+		# First entry starts a offset 8.
+		ADVentry_offset=8;
+
+		until eval $(hexdump -s $(( ${ADVoffset} + ${ADVentry_offset} )) -n $((512 - 3*4)) \
+			     -e '1/1 "tag=%u; " 1/1 "tag_len=%u; label='\''" 498 "%_p"' ${Tmp_Log};
+			   printf "'");
+		      [ ${tag} -eq 0 ] ; do
+
+
+		  if [ ${tag_len} -gt 0 ] ; then
+		     label=${label:0:${tag_len}};
+		  fi		   
+
+		  case ${tag} in
+			1) Syslinux_Msg="${Syslinux_Msg} ${syslinux_version:0:8}'s ADV is set to boot label \"${label}\" next boot only.";;
+			2) Syslinux_Msg="${Syslinux_Msg} ${syslinux_version:0:8}'s ADV is set to boot label \"${label}\" by default.";;
+		  esac
+
+		  # Adjust the ADVentry_offset, so it points to the next entry.
+		  ADVentry_offset=$(( ${ADVentry_offset} + ${tag_len} + 2 ));
+
+		done
+	     else
+		Syslinux_Msg="${Syslinux_Msg} The integrity check of the ADV area failed.";
+	     fi
+	  else
+	     Syslinux_Msg="${Syslinux_Msg} The ADV head and tail magic bytes were not found.";
+	  fi
        fi
 
        return;
