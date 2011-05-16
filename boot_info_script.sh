@@ -2262,7 +2262,7 @@ Get_Partition_Info() {
   ## Display boot sector info. ##
 
   printf '    Boot sector info:  ' >> "${Log}";
-  echo ${BSI} | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}";
+  printf "${BSI}\n" | fold -s -w 55 | sed -e '/^-------------------------$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
 
 
 
@@ -2501,7 +2501,7 @@ Get_Partition_Info() {
 
 	if [[ x"${BFI}" != x'' ]] ; then
 	   printf "    Boot file info:     " >> "${Log}";
-	   echo "${BFI}" | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}";
+	   printf "${BFI}\n" | fold -s -w 55 | sed -e '/^-------------------------$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
 	fi
 
 	echo "    Operating System:  "${OS} | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}"
@@ -2779,7 +2779,8 @@ for HI in ${!HDName[@]} ; do
   ## Output message at beginning of summary that gives MBR info for each drive: ##
 
   printf ' => ' >> "${Log}";
-  echo "${BL} ${Message}." | fold -s -w 75 | sed -e '2~1s/.*/    &/' >> "${Log}";
+  printf "${BL} ${Message}.\n" | fold -s -w 75 | sed -e '/^-----$/ d' -e '2~1s/.*/    &/' >> "${Log}";
+
   HDMBR[${HI}]=${BL};
 done
 
