@@ -3,7 +3,8 @@ VERSION='0.56';
 DATE='8 February 2011';
 ################################################################################
 #                                                                              #
-# Copyright (c) 2011              Ulrich Meierfrankenfeld and Gert Hulslemans  #
+# Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
+# Copyright (c) 2011           Gert Hulslemans                                 #
 #                                                                              #
 # Permission is hereby granted, free of charge, to any person obtaining a copy #
 # of this software and associated documentation files (the "Software"), to     #
@@ -25,9 +26,10 @@ DATE='8 February 2011';
 #                                                                              #
 ################################################################################
 #                                                                              #
-# Author:        Ulrich Meierfrankenfeld (aka meierfra) (ubuntuforums.org)     #
-# Contributors:  Gert Hulselmans                                               #
-#                caljohnsmith (ubuntuforums.org)                               #
+# Developers:    Ulrich Meierfrankenfeld (aka meierfra) (ubuntuforums.org)     #
+#                Gert Hulselmans                                               #
+#                                                                              #
+# Contributor:   caljohnsmith (ubuntuforums.org)                               #
 #                                                                              #
 # Hosted at:     http://sourceforge.net/projects/bootinfoscript/               #
 #                                                                              #
