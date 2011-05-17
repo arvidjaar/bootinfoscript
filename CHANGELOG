@@ -1,4 +1,4 @@
-﻿CHANGELOG:
+CHANGELOG:
 ==========
 
 Version 0.60 (2010-05-17)
@@ -38,8 +38,10 @@ Version 0.60 (2010-05-17)
       - Grub4dos
       - WEE
       - XOSL
+      - ReactOS
   * Add detection for grub4dos installed in the PBR.
   * Add detection for FreeDOS PBR code.
+  * Add detection for ReactOS PBR code.
   * List additional boot files when found:
       - SYSLINUX/EXTLINUX: ldlinux.sys and extlinux.sys
       - Grub4dos: grldr and grldr.bin
@@ -50,7 +52,6 @@ Version 0.60 (2010-05-17)
       - ReactOS: freeldr.sys qnd freeldr.ini
   * Display offset of file on a disk in GB and GiB for Grub(2) and Syslinux.
   * Display embedded config file for Grub4dos/WEE.
-  * Add ReactOS support.
   * Most lines in the output file are now 80 characters or less.
   * Prefer gawk above nawk and busybox awk (workaround for bugs in nawk).
   
