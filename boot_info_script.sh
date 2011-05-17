@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION='0.56';
-DATE='8 February 2011';
+VERSION='0.60';
+DATE='17 May 2011';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
