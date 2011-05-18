@@ -4,7 +4,7 @@ DATE='17 May 2011';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
-# Copyright (c) 2011           Gert Hulslemans                                 #
+# Copyright (c) 2011           Gert Hulselmans                                 #
 #                                                                              #
 # Permission is hereby granted, free of charge, to any person obtaining a copy #
 # of this software and associated documentation files (the "Software"), to     #
