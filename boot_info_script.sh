@@ -124,19 +124,6 @@ RELEASE_DATE='17 May 2011';
 
 
 
-## Display version and release date of the script when asked: ##
-#
-#   bash ./boot_info_script.sh -v
-#   bash ./boot_info_script.sh -V
-#   bash ./boot_info_script.sh --version 
-
-version () {
-  printf '\nBoot Info Script version: %s\nRelease date:             %s\n\n' "${VERSION}" "${RELEASE_DATE}";
-  exit 0;
-}
-
-
-
 ## Display help text ##
 #
 #   bash ./boot_info_script.sh -h
@@ -196,6 +183,19 @@ help () {
    echo '';
 
    exit 0;
+}
+
+
+
+## Display version and release date of the script when asked: ##
+#
+#   bash ./boot_info_script.sh -v
+#   bash ./boot_info_script.sh -V
+#   bash ./boot_info_script.sh --version 
+
+version () {
+  printf '\nBoot Info Script version: %s\nRelease date:             %s\n\n' "${VERSION}" "${RELEASE_DATE}";
+  exit 0;
 }
 
 
