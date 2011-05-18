@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION='0.60';
-DATE='17 May 2011';
+RELEASE_DATE='17 May 2011';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
@@ -52,7 +52,7 @@ DATE='17 May 2011';
 #     su -                                                                     #
 #     bash ./boot_info_script.sh <outputfile>                                  #
 #                                                                              #
-#   To get version number and last editing date of this script, use:           #
+#   To get version number and release date of this script, use:                #
 #     (no root rights needed)                                                  #
 #                                                                              #
 #     bash ./boot_info_script.sh -v                                            #
@@ -124,14 +124,14 @@ DATE='17 May 2011';
 
 
 
-## Display version and last modification date of the script when asked: ##
+## Display version and release date of the script when asked: ##
 #
 #   bash ./boot_info_script.sh -v
 #   bash ./boot_info_script.sh -V
 #   bash ./boot_info_script.sh --version 
 
 version () {
-  printf '\nboot_info_script version: %s\nLast modification date:   %s\n\n' "${VERSION}" "${DATE}";
+  printf '\nBoot Info Script version: %s\nRelease date:             %s\n\n' "${VERSION}" "${RELEASE_DATE}";
   exit 0;
 }
 
@@ -169,7 +169,7 @@ help () {
    echo '  "RESULTS2.txt", ...';
    echo '';
    echo '';
-   echo '  To get version number and last editing date of this script, use:';
+   echo '  To get version number and release date of this script, use:';
    echo '    (no root rights needed)';
    echo '';
    echo "    bash $0 -v";
@@ -249,7 +249,7 @@ process_args ${@};
 
 ## Display version number and last modification date. ##
 
-printf '\nboot_info_script version: %s        [%s]\n\n' "${VERSION}" "${DATE}";
+printf '\nBoot Info Script %s        [%s]\n\n' "${VERSION}" "${RELEASE_DATE}";
 
 
 
@@ -2567,7 +2567,7 @@ titlebar_gen () {
 
 
 # Center title.
-BIS_title="Boot Info Script ${VERSION}    from ${DATE}";
+BIS_title="Boot Info Script ${VERSION}        [${RELEASE_DATE}]";
 printf -v BIS_title_space "%$(( ( 80 - ${#BIS_title} ) / 2 - 1 ))s";
 
 printf '%s\n\n\n============================= Boot Info Summary: ===============================\n\n' "${BIS_title_space}${BIS_title}" >> "${Log}";
