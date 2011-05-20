@@ -1,6 +1,10 @@
 CHANGELOG:
 ==========
 
+Version 0.61 (2010-05-)
+  * Add --update switch to make it easier to download the last development
+    version.
+
 Version 0.60 (2010-05-17)
   * New maintainer: Gert Hulselmans.
   * boot_info_script is now released under the MIT license.

@@ -1,6 +1,7 @@
 #!/bin/bash
 VERSION='0.60';
 RELEASE_DATE='17 May 2011';
+RETRIEVAL_DATE='';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
@@ -69,6 +70,14 @@ RELEASE_DATE='17 May 2011';
 #                                                                              #
 #     bash ./boot_info_script.sh -g <outputfile>                               #
 #     bash ./boot_info_script.sh --gzip <outputfile>                           #
+#                                                                              #
+#   The last development version of boot_info_script can be downloaded, with:  #
+#     (no root rights needed)                                                  #
+#                                                                              #
+#     bash ./boot_info_script.sh --update <filename>"                          #
+#                                                                              #
+#   If no filename is specified, the file will be saved in the home dir as     #
+#   "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".                                 #
 #                                                                              #
 #  If multiple versions of boot_info_script are detected in the same           #
 #  directory, boot_info_script will list all versions found.                   #
@@ -156,7 +165,7 @@ help () {
    echo '  "RESULTS2.txt", ...';
    echo '';
    echo '';
-   echo '  To get version number and release date of this script, use:';
+   echo '  To get version number, release and git retrieval date of this script, use:';
    echo '    (no root rights needed)';
    echo '';
    echo "    bash $0 -v";
@@ -174,6 +183,14 @@ help () {
    echo "    bash $0 -g <outputfile>";
    echo "    bash $0 --gzip <outputfile>";
    echo '';
+   echo '  The last development version of boot_info_script can be downloaded, with:';
+   echo '    (no root rights needed)';
+   echo '';
+   echo "    bash $0 --update <filename>";
+   echo '';
+   echo '  If no filename is specified, the file will be saved in the home dir as';
+   echo '  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".'
+   echo '';
    echo '  If multiple versions of boot_info_script are detected in the same directory,';
    echo '  boot_info_script will list all versions found.';
    echo '  In that case you need to force boot_info_script to run a certain version,';
@@ -187,14 +204,67 @@ help () {
 
 
 
-## Display version and release date of the script when asked: ##
+## Download the last development version of BIS from git: ##
+#
+#   bash ./boot_info_script.sh --update <filename>
+#
+#   If no filename is specified, the file will be saved in the home dir as
+#   "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
+
+update () {
+  local git_bis_url='http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=blob_plain;f=boot_info_script.sh;hb=HEAD';
+
+  # Check if date is available.
+  if [ $(type date > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
+     echo '"date" could not be found.' >&2;
+     exit 1;
+  fi
+
+  # Get current UTC time in YYYY-MM-DD-hh:mm:ss format.
+  UTC_TIME=$(date --utc "+%Y-%m-%d %T");
+
+  if [ ! -z "$1" ] ; then
+     GIT_BIS_FILENAME="$1";
+  else
+     GIT_BIS_FILENAME="${HOME}/boot_info_script_${UTC_TIME/ /_}.sh"
+  fi
+
+  # Check if wget or curl is available
+  if [ $(type wget > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+     printf '\nDownloading last development version of Boot Info Script from git:\n\n';
+     wget -O "${GIT_BIS_FILENAME}" "${git_bis_url}";
+  elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+     printf 'Downloading last development version of Boot Info Script from git:\n\n';
+     curl -o "${GIT_BIS_FILENAME}" "${git_bis_url}";
+  else
+     printf '"wget" or "curl" could not be found.\nInstall at least one of them and try again.\n' >&2;
+     exit 1;
+  fi
+
+  # Set the retrieval date in just downloaded script.
+  sed -i -e "3,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" "${GIT_BIS_FILENAME}";
+
+  printf '\nThe development version of Boot Info Script is saved as:\n"%s"\n\n' "${GIT_BIS_FILENAME}";
+  exit 0;
+}
+
+
+
+## Display version, release and git retrieval date of the script when asked: ##
 #
 #   bash ./boot_info_script.sh -v
 #   bash ./boot_info_script.sh -V
 #   bash ./boot_info_script.sh --version 
 
 version () {
-  printf '\nBoot Info Script version: %s\nRelease date:             %s\n\n' "${VERSION}" "${RELEASE_DATE}";
+  printf '\nBoot Info Script version: %s\nRelease date:             %s' "${VERSION}" "${RELEASE_DATE}";
+
+  if [ ! -z "${RETRIEVAL_DATE}" ] ; then
+     printf '\nGit retrieval date:       %s' "${RETRIEVAL_DATE}";
+  fi
+
+  printf '\n\n';
+
   exit 0;
 }
 
@@ -229,6 +299,7 @@ process_args () {
 	-h	  ) help;;
 	-help	  ) help;;
 	--help	  ) help;;
+	--update  ) update "$2";;
 	-v	  ) version;;
 	-V	  ) version;;
 	--version ) version;;
@@ -247,9 +318,15 @@ process_args ${@};
 
 
 
-## Display version number and last modification date. ##
+## Display version number, release and git retrieval date. ##
 
-printf '\nBoot Info Script %s        [%s]\n\n' "${VERSION}" "${RELEASE_DATE}";
+printf '\nBoot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}";
+
+if [ ! -z "${RETRIEVAL_DATE}" ] ; then
+   printf '\n                           [retrieved from git on %s]' "${RETRIEVAL_DATE}";
+fi
+
+printf '\n\n';
 
 
 
@@ -2566,11 +2643,20 @@ titlebar_gen () {
 ## Start ##
 
 
-# Center title.
-BIS_title="Boot Info Script ${VERSION}        [${RELEASE_DATE}]";
-printf -v BIS_title_space "%$(( ( 80 - ${#BIS_title} ) / 2 - 1 ))s";
 
-printf '%s\n\n\n============================= Boot Info Summary: ===============================\n\n' "${BIS_title_space}${BIS_title}" >> "${Log}";
+# Center title.
+BIS_title=$(printf 'Boot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}");
+printf -v BIS_title_space "%$(( ( 80 - ${#BIS_title} ) / 2 - 1 ))s";
+printf "${BIS_title_space}${BIS_title}\n" > "${Log}";
+
+if [ ! -z "${RETRIEVAL_DATE}" ] ; then
+   # Display retrieval date if the version was retrieved from git.
+   printf '%s[retrieved from git on %s]\n' "${BIS_title_space}" "${RETRIEVAL_DATE}" >> "${Log}";
+fi
+
+printf '\n\n============================= Boot Info Summary: ===============================\n\n' >> "${Log}";
+
+
 
 # Search for hard drives which don't exist, have a corrupted partition table
 # or don't have a parition table (whole drive is a filesystem).
