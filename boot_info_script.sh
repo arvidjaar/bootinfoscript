@@ -1,6 +1,7 @@
 #!/bin/bash
 VERSION='0.60';
 RELEASE_DATE='17 May 2011';
+LAST_GIT_COMMIT='';
 RETRIEVAL_DATE='';
 ################################################################################
 #                                                                              #
@@ -53,7 +54,8 @@ RETRIEVAL_DATE='';
 #     su -                                                                     #
 #     bash ./boot_info_script.sh <outputfile>                                  #
 #                                                                              #
-#   To get version number and release date of this script, use:                #
+#   To get version number, release date, last git commit and git retrieval     #
+#   date of this script, use:                                                  #
 #     (no root rights needed)                                                  #
 #                                                                              #
 #     bash ./boot_info_script.sh -v                                            #
@@ -165,7 +167,8 @@ help () {
    echo '  "RESULTS2.txt", ...';
    echo '';
    echo '';
-   echo '  To get version number, release and git retrieval date of this script, use:';
+   echo '  To get version number, release date, last git commit and git retrieval date';
+   echo '  of this script, use:';
    echo '    (no root rights needed)';
    echo '';
    echo "    bash $0 -v";
@@ -213,6 +216,7 @@ help () {
 
 update () {
   local git_bis_url='http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=blob_plain;f=boot_info_script.sh;hb=HEAD';
+  local git_commit_url='http://bootinfoscript.sourceforge.net/bis-last-commit.txt'
 
   # Check if date is available.
   if [ $(type date > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
@@ -233,16 +237,20 @@ update () {
   if [ $(type wget > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf '\nDownloading last development version of Boot Info Script from git:\n\n';
      wget -O "${GIT_BIS_FILENAME}" "${git_bis_url}";
+     LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}" 2> /dev/null);
   elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf 'Downloading last development version of Boot Info Script from git:\n\n';
      curl -o "${GIT_BIS_FILENAME}" "${git_bis_url}";
+     LAST_GIT_COMMIT=$(curl "${git_commit_url}");
   else
      printf '"wget" or "curl" could not be found.\nInstall at least one of them and try again.\n' >&2;
      exit 1;
   fi
 
   # Set the retrieval date in just downloaded script.
-  sed -i -e "4,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" "${GIT_BIS_FILENAME}";
+  sed -i -e "4,0 s/LAST_GIT_COMMIT='';/LAST_GIT_COMMIT='${LAST_GIT_COMMIT}';/" \
+	 -e "5,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" \
+	 "${GIT_BIS_FILENAME}";
 
   printf '\nThe development version of Boot Info Script is saved as:\n"%s"\n\n' "${GIT_BIS_FILENAME}";
   exit 0;
@@ -250,7 +258,7 @@ update () {
 
 
 
-## Display version, release and git retrieval date of the script when asked: ##
+## Display version, release, last git commit and git retrieval date of the script when asked: ##
 #
 #   bash ./boot_info_script.sh -v
 #   bash ./boot_info_script.sh -V
@@ -259,8 +267,8 @@ update () {
 version () {
   printf '\nBoot Info Script version: %s\nRelease date:             %s' "${VERSION}" "${RELEASE_DATE}";
 
-  if [ ! -z "${RETRIEVAL_DATE}" ] ; then
-     printf '\nGit retrieval date:       %s' "${RETRIEVAL_DATE}";
+  if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
+     printf '\nLast git commit:          %s\nRetrieved from git on:    %s' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}";
   fi
 
   printf '\n\n';
@@ -322,8 +330,8 @@ process_args ${@};
 
 printf '\nBoot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}";
 
-if [ ! -z "${RETRIEVAL_DATE}" ] ; then
-   printf '\n                           [retrieved from git on %s]' "${RETRIEVAL_DATE}";
+if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
+   printf '\n  Last git commit:         %s\n  Retrieved from git on:   %s' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}";
 fi
 
 printf '\n\n';
@@ -2649,9 +2657,8 @@ BIS_title=$(printf 'Boot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}
 printf -v BIS_title_space "%$(( ( 80 - ${#BIS_title} ) / 2 - 1 ))s";
 printf "${BIS_title_space}${BIS_title}\n" > "${Log}";
 
-if [ ! -z "${RETRIEVAL_DATE}" ] ; then
-   # Display retrieval date if the version was retrieved from git.
-   printf '%s[retrieved from git on %s]\n' "${BIS_title_space}" "${RETRIEVAL_DATE}" >> "${Log}";
+if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
+   printf '\nLast git commit:       %s\nRetrieved from git on: %s\n' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}" >> "${Log}";
 fi
 
 printf '\n\n============================= Boot Info Summary: ===============================\n\n' >> "${Log}";
