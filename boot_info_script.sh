@@ -242,7 +242,7 @@ update () {
   fi
 
   # Set the retrieval date in just downloaded script.
-  sed -i -e "3,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" "${GIT_BIS_FILENAME}";
+  sed -i -e "4,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" "${GIT_BIS_FILENAME}";
 
   printf '\nThe development version of Boot Info Script is saved as:\n"%s"\n\n' "${GIT_BIS_FILENAME}";
   exit 0;
