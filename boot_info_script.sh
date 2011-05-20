@@ -2340,7 +2340,7 @@ Get_Partition_Info() {
 
   ## Display boot sector info. ##
 
-  printf '    Boot sector info:  ' >> "${Log}";
+  printf '    Boot sector info: ' >> "${Log}";
   printf "${BSI}\n" | fold -s -w 55 | sed -e '/^-------------------------$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
 
 
