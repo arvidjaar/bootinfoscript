@@ -57,7 +57,7 @@ Version 0.60 (2010-05-17)
   * Display offset of file on a disk in GB and GiB for Grub(2) and Syslinux.
   * Display embedded config file for Grub4dos/WEE.
   * Most lines in the output file are now 80 characters or less.
-  * Prefer gawk above nawk and busybox awk (workaround for bugs in nawk).
+  * Prefer gawk above busybox awk (nawk 1.3.3 has to many bugs).
   
 Version 0.55 (2010-02-15)
   * Show blkid info for all drives.
