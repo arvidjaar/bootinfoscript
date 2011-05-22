@@ -1851,7 +1851,7 @@ grub2_info () {
      else
 	# Embedded config file found.
 
-	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}--------------------------------------------------------------------------------\n");
+	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}\n--------------------------------------------------------------------------------\n");
 
      fi
   fi
