@@ -157,7 +157,7 @@ update () {
   fi
 
   # Set the retrieval date in just downloaded script.
-  sed -i -e "4,0 s/LAST_GIT_COMMIT='';/LAST_GIT_COMMIT='${LAST_GIT_COMMIT}';/" \
+  sed -i -e "4,0 s@LAST_GIT_COMMIT='';@LAST_GIT_COMMIT='${LAST_GIT_COMMIT}';@" \
 	 -e "5,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" \
 	 "${GIT_BIS_FILENAME}";
 
