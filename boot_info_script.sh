@@ -444,9 +444,9 @@ Boot_Prog_Fat='
 
 Boot_Files_Normal='
 	/menu.lst	/grub/menu.lst	/boot/grub/menu.lst	/NST/menu.lst	
-	/grub.cfg	/grub/grub.cfg	/boot/grub/grub.cfg
+	/grub.cfg	/grub/grub.cfg	/boot/grub/grub.cfg	/grub2/grub.cfg	/boot/grub2/grub.cfg
 	/burg.cfg	/burg/burg.cfg	/boot/burg/burg.cfg
-	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf
+	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf	/grub2/grub.conf	/boot/grub2/grub.conf
 	/ubuntu/disks/boot/grub/menu.lst	/ubuntu/disks/install/boot/grub/menu.lst	/ubuntu/winboot/menu.lst
 	/boot.ini	/BOOT.INI
 	/etc/fstab
@@ -458,9 +458,9 @@ Boot_Files_Normal='
 
 Boot_Files_Fat='
 	/menu.lst	/grub/menu.lst	/boot/grub/menu.lst	/NST/menu.lst
-	/grub.cfg	/grub/grub.cfg	/boot/grub/grub.cfg
+	/grub.cfg	/grub/grub.cfg	/boot/grub/grub.cfg	/grub2/grub.cfg	/boot/grub2/grub.cfg
 	/burg.cfg	/burg/burg.cfg	/boot/burg/burg.cfg
-	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf
+	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf	/grub2/grub.conf	/boot/grub2/grub.conf
 	/ubuntu/disks/boot/grub/menu.lst	/ubuntu/disks/install/boot/grub/menu.lst	/ubuntu/winboot/menu.lst
 	/boot.ini
 	/freeldr.ini
@@ -477,10 +477,10 @@ Boot_Files_Fat='
 GrubError18_Files='
 	menu.lst	grub/menu.lst	boot/grub/menu.lst	NST/menu.lst
 	ubuntu/disks/boot/grub/menu.lst
-	grub.conf	grub/grub.conf	boot/grub/grub.conf
-	grub.cfg	grub/grub.cfg	boot/grub/grub.cfg
+	grub.conf	grub/grub.conf	boot/grub/grub.conf	grub2/grub.conf	boot/grub2/grub.conf
+	grub.cfg	grub/grub.cfg	boot/grub/grub.cfg	grub2/grub.cfg	boot/grub2/grub.cfg
 	burg.cfg	burg/burg.cfg	boot/burg/burg.cfg
-	core.img	grub/core.img	boot/grub/core.img
+	core.img	grub/core.img	boot/grub/core.img	grub2/core.img	boot/grub2/core.img
 	burg/core.img	boot/burg/core.img
 	stage2		grub/stage2	boot/grub/stage2
 	boot/vmlinuz*	vmlinuz*	ubuntu/disks/boot/vmlinuz*

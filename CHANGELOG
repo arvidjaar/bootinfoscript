@@ -4,6 +4,8 @@ CHANGELOG:
 Version 0.61 (2010-05-)
   * Add --update switch to make it easier to download the last development
     version.
+  * Also detect grub2 files when they are located in /grub2 or /boot/grub2
+   (Mandriva).
 
 Version 0.60 (2010-05-17)
   * New maintainer: Gert Hulselmans.
