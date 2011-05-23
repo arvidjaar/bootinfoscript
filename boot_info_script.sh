@@ -51,65 +51,70 @@ RETRIEVAL_DATE='';
 #   bash ./boot_info_script.sh --help
  
 help () {
-   echo '';
-   echo 'Usage boot_info_script:';
-   echo '-----------------------';
-   echo '';
-   echo '  Run the script as sudoer:';
-   echo ''
-   echo "    sudo bash $0 <outputfile>";
-   echo '';
-   echo '  or if your operating system does not use sudo:';
-   echo '';
-   echo '    su -';
-   echo "    bash $0 <outputfile>";
-   echo '';
-   echo '';
-   echo '  When running the script, without specifying an output file, all the output';
-   echo '  is written to the file "RESULTS.txt" in the same folder as the script.';
-   echo '';
-   echo '  But when run from /bin, /sbin, /usr/bin, or another system folder, the file';
-   echo '  "RESULTS.txt" is written to the home directory of the user.';
-   echo '';
-   echo '  When the file "RESULTS.txt" already exists, the results will be written to';
-   echo '  "RESULTS1.txt". If "RESULTS1.txt" exists, the results will be written to';
-   echo '  "RESULTS2.txt", ...';
-   echo '';
-   echo '';
-   echo '  To get version number, release date, last git commit and git retrieval date';
-   echo '  of this script, use:';
-   echo '    (no root rights needed)';
-   echo '';
-   echo "    bash $0 -v";
-   echo "    bash $0 -V";
-   echo "    bash $0 --version";
-   echo '';
-   echo '  To get this help text, use (no root rights needed):';
-   echo '';
-   echo "    bash $0 -h";
-   echo "    bash $0 -help";
-   echo "    bash $0 --help";
-   echo '';
-   echo '  To automatically gzip a copy of the output file, use (root rights needed):';
-   echo '';
-   echo "    bash $0 -g <outputfile>";
-   echo "    bash $0 --gzip <outputfile>";
-   echo '';
-   echo '  The last development version of boot_info_script can be downloaded, with:';
-   echo '    (no root rights needed)';
-   echo '';
-   echo "    bash $0 --update <filename>";
-   echo '';
-   echo '  If no filename is specified, the file will be saved in the home dir as';
-   echo '  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".'
-   echo '';
-   echo '  If multiple versions of boot_info_script are detected in the same directory,';
-   echo '  boot_info_script will list all versions found.';
-   echo '  In that case you need to force boot_info_script to run a certain version,';
-   echo '  by adding "--this" as first argument (root rights needed):';
-   echo '';
-   echo "    bash $0 --this <outputfile>";
-   echo '';
+   cat <<- HELP
+	
+	Usage boot_info_script:
+	-----------------------
+	
+	  Run the script as sudoer:
+	
+	    sudo ${0} <outputfile>
+	
+	  or if your operating system does not use sudo:
+	
+	    su -
+	    bash ${0} <outputfile>
+	
+	
+	  When running the script, without specifying an output file, all the output
+	  is written to the file "RESULTS.txt" in the same folder as the script.
+	
+	  But when run from /bin, /sbin, /usr/bin, or another system folder, the file
+	  "RESULTS.txt" is written to the home directory of the user.
+	
+	  When the file "RESULTS.txt" already exists, the results will be written to
+	  "RESULTS1.txt". If "RESULTS1.txt" exists, the results will be written to
+	  "RESULTS2.txt", ...
+	
+	
+	  To get version number, release date, last git commit and git retrieval date
+	  of this script, use (no root rights needed):
+	
+	    bash ${0} -v
+	    bash ${0} -V
+	    bash ${0} --version
+	
+	
+	  To get this help text, use (no root rights needed):
+	
+	    bash ${0} -h
+	    bash ${0} -help
+	    bash ${0} --help
+	
+		
+	  To automatically gzip a copy of the output file, use (root rights needed):
+	
+	    bash ${0} -g <outputfile>
+	    bash ${0} --gzip <outputfile>
+	
+	
+	  The last development version of boot_info_script can be downloaded, with:
+	    (no root rights needed)
+	
+	    bash ${0} --update <filename>
+	
+	  If no filename is specified, the file will be saved in the home dir as
+	  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
+	
+	
+	  If multiple versions of boot_info_script are detected in the same directory,
+	  boot_info_script will list all versions found.
+	  In that case you need to force boot_info_script to run a certain version,
+	  by adding "--this" as first argument (root rights needed):
+	
+	    bash ${0} --this <outputfile>
+	
+	HELP
 
    exit 0;
 }
