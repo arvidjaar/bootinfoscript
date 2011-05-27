@@ -44,6 +44,15 @@ RETRIEVAL_DATE='';
 
 
 
+## Check if the script is run with bash as shell interpreter.
+
+if [ -z "$BASH_VERSION" ] ; then
+   echo 'Boot Info Script needs to be run with bash as shell interpreter.' >&2;
+   exit 1;
+fi
+
+
+
 ## Display help text ##
 #
 #   bash ./boot_info_script.sh -h
