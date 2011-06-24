@@ -55,9 +55,9 @@ fi
 
 ## Display help text ##
 #
-#   bash ./boot_info_script.sh -h
-#   bash ./boot_info_script.sh -help
-#   bash ./boot_info_script.sh --help
+#   ./boot_info_script.sh -h
+#   ./boot_info_script.sh -help
+#   ./boot_info_script.sh --help
  
 help () {
    cat <<- HELP
@@ -72,7 +72,7 @@ help () {
 	  or if your operating system does not use sudo:
 	
 	    su -
-	    bash ${0} <outputfile>
+	    ${0} <outputfile>
 	
 	
 	  When running the script, without specifying an output file, all the output
@@ -89,33 +89,33 @@ help () {
 	  To get version number, release date, last git commit and git retrieval date
 	  of this script, use (no root rights needed):
 	
-	    bash ${0} -v
-	    bash ${0} -V
-	    bash ${0} --version
+	    ${0} -v
+	    ${0} -V
+	    ${0} --version
 	
 	
 	  To get this help text, use (no root rights needed):
 	
-	    bash ${0} -h
-	    bash ${0} -help
-	    bash ${0} --help
+	    ${0} -h
+	    ${0} -help
+	    ${0} --help
 	
 		
 	  To automatically gzip a copy of the output file, use (root rights needed):
 	
-	    bash ${0} -g <outputfile>
-	    bash ${0} --gzip <outputfile>
+	    ${0} -g <outputfile>
+	    ${0} --gzip <outputfile>
 	
 		
 	  To write the output to stdout instead of a file, use (root rights needed):
 	
-	    bash ${0} --stdout
+	    ${0} --stdout
 	
 	
 	  The last development version of boot_info_script can be downloaded, with:
 	    (no root rights needed)
 	
-	    bash ${0} --update <filename>
+	    ${0} --update <filename>
 	
 	  If no filename is specified, the file will be saved in the home dir as
 	  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
@@ -126,7 +126,7 @@ help () {
 	  In that case you need to force boot_info_script to run a certain version,
 	  by adding "--this" as first argument (root rights needed):
 	
-	    bash ${0} --this <outputfile>
+	    ${0} --this <outputfile>
 	
 	HELP
 
@@ -137,7 +137,7 @@ help () {
 
 ## Download the last development version of BIS from git: ##
 #
-#   bash ./boot_info_script.sh --update <filename>
+#   ./boot_info_script.sh --update <filename>
 #
 #   If no filename is specified, the file will be saved in the home dir as
 #   "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
@@ -188,9 +188,9 @@ update () {
 
 ## Display version, release, last git commit and git retrieval date of the script when asked: ##
 #
-#   bash ./boot_info_script.sh -v
-#   bash ./boot_info_script.sh -V
-#   bash ./boot_info_script.sh --version 
+#   ./boot_info_script.sh -v
+#   ./boot_info_script.sh -V
+#   ./boot_info_script.sh --version 
 
 version () {
   printf '\nBoot Info Script version: %s\nRelease date:             %s' "${VERSION}" "${RELEASE_DATE}";
@@ -361,7 +361,7 @@ fi
 #
 #   To force BIS to run a certain version, add "--this" as first argument:
 #
-#     bash ./boot_info_script.sh --this <outputfile>
+#     ./boot_info_script.sh --this <outputfile>
 #
 
 if [ ${this_BIS} -eq 0 ] ; then
@@ -377,7 +377,7 @@ if [ ${this_BIS} -eq 0 ] ; then
 	printf "  - ${BIS_files[$i]}:\tversion ${BIS_VERSION}\n";
       done
 
-      printf '\nAre you sure you want to run this version? If so, run:\n\n  bash %s --this %s\n\n' "$0" "$*";
+      printf '\nAre you sure you want to run this version? If so, run:\n\n  %s --this %s\n\n' "$0" "$*";
       exit 1;
    fi
 fi
@@ -3127,8 +3127,8 @@ else
    #
    #   gzip a copy of the RESULTS file only when -g or --gzip is passed on the command line. 
    #
-   #   bash ./boot_info_script.sh -g <outputfile> 
-   #   bash ./boot_info_script.sh --gzip <outputfile> 
+   #   ./boot_info_script.sh -g <outputfile> 
+   #   ./boot_info_script.sh --gzip <outputfile> 
 
    if [ ${gzip_output} -eq 1 ] ; then
       cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
