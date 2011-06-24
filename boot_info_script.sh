@@ -106,6 +106,11 @@ help () {
 	    bash ${0} -g <outputfile>
 	    bash ${0} --gzip <outputfile>
 	
+		
+	  To write the output to stdout instead of a file, use (root rights needed):
+	
+	    bash ${0} --stdout
+	
 	
 	  The last development version of boot_info_script can be downloaded, with:
 	    (no root rights needed)
@@ -202,10 +207,13 @@ version () {
 
 
 ## Run this version of BIS even when multiple versions are detected in the same directory?
-this_BIS=0;	# no=0
+this_BIS=0;	 # no=0
 
 ## Gzip a copy of the output file? ##
-gzip_output=0;	# off=0
+gzip_output=0;	 # off=0
+
+## Write the output to the standard output instead of to a file? ##
+stdout_output=0; # off=0
 
 
 
@@ -230,6 +238,7 @@ process_args () {
 	-h	  ) help;;
 	-help	  ) help;;
 	--help	  ) help;;
+	--stdout  ) stdout_output=1;;
 	--update  ) update "$2";;
 	-v	  ) version;;
 	-V	  ) version;;
@@ -516,7 +525,10 @@ SyslinuxError_Files='
 
 ## Set output filename ##
 
-if ( [ ! -z "${LogFile_cmd}" ]) ; then
+if [ ${stdout_output} -eq 1 ] ; then
+  # The LogFile name is not used when --stdout is specified.
+  LogFile="";
+elif ( [ ! -z "${LogFile_cmd}" ]) ; then
   # The RESULTS filename is specified on the commandline.
   LogFile=$(basename "${LogFile_cmd}");
 
@@ -3097,42 +3109,47 @@ echo >> "${Log}";
 
 
 
-## Copy the log file to RESULTS file and make the user the owner of RESULTS file. ##
+if [ ${stdout_output} -eq 1 ] ; then
+   ## If --stdout is specified, show the output.
+   cat "${Log}";
+else
+   ## Copy the log file to RESULTS file and make the user the owner of RESULTS file. ##
 
-cp "${Log}" "${LogFile}";
-
-if [ "${SUDO_UID}:${SUDO_GID}" != ':' ] ; then
-   chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}";
-fi
-
-
-
-## gzip the RESULTS file, for easy uploading. ##
-#
-#   gzip a copy of the RESULTS file only when -g or --gzip is passed on the command line.
-#
-#   bash ./boot_info_script.sh -g <outputfile> 
-#   bash ./boot_info_script.sh --gzip <outputfile> 
-
-if [ ${gzip_output} -eq 1 ] ; then
-   cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
+   cp "${Log}" "${LogFile}";
 
    if [ "${SUDO_UID}:${SUDO_GID}" != ':' ] ; then
-      chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}.gz";
+      chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}";
    fi
+
+
+
+   ## gzip the RESULTS file, for easy uploading. ##
+   #
+   #   gzip a copy of the RESULTS file only when -g or --gzip is passed on the command line. 
+   #
+   #   bash ./boot_info_script.sh -g <outputfile> 
+   #   bash ./boot_info_script.sh --gzip <outputfile> 
+
+   if [ ${gzip_output} -eq 1 ] ; then
+      cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
+
+      if [ "${SUDO_UID}:${SUDO_GID}" != ':' ] ; then
+	 chown "${SUDO_UID}:${SUDO_GID}" "${LogFile}.gz";
+      fi
+   fi
+
+
+
+   ## Reset the Standard Output to the Terminal. ##
+   #
+   #   exec 1>&-;
+   #   exec 1>&6;
+   #   exec 6>&-;
+
+
+
+   printf '\nFinished. The results are in the file "%s"\nlocated in "%s".\n\n' "$(basename "${LogFile}")" "${Dir}/";
 fi
-
-
-
-## Reset the Standard Output to the Terminal. ##
-#
-#   exec 1>&-;
-#   exec 1>&6;
-#   exec 6>&-;
-
-
-
-printf '\nFinished. The results are in the file "%s"\nlocated in "%s".\n\n' "$(basename "${LogFile}")" "${Dir}/";
 
 exit 0;
 
