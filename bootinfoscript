@@ -35,7 +35,7 @@ RETRIEVAL_DATE='';
 #                                                                              #
 # Hosted at:     http://sourceforge.net/projects/bootinfoscript/               #
 #                                                                              #
-# The birth of the boot info script:                                           #
+# The birth of the Boot Info Script:                                           #
 #                http://ubuntuforums.org/showthread.php?t=837791               #
 #                                                                              #
 # Tab width:     8 spaces                                                      #
@@ -55,14 +55,14 @@ fi
 
 ## Display help text ##
 #
-#   ./boot_info_script.sh -h
-#   ./boot_info_script.sh -help
-#   ./boot_info_script.sh --help
+#   ./bootinfoscript -h
+#   ./bootinfoscript -help
+#   ./bootinfoscript --help
  
 help () {
    cat <<- HELP
 	
-	Usage boot_info_script:
+	Usage Boot Info Script:
 	-----------------------
 	
 	  Run the script as sudoer:
@@ -112,18 +112,18 @@ help () {
 	    ${0} --stdout
 	
 	
-	  The last development version of boot_info_script can be downloaded, with:
+	  The last development version of Boot Info Script can be downloaded, with:
 	    (no root rights needed)
 	
 	    ${0} --update <filename>
 	
 	  If no filename is specified, the file will be saved in the home dir as
-	  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
+	  "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 	
 	
-	  If multiple versions of boot_info_script are detected in the same directory,
-	  boot_info_script will list all versions found.
-	  In that case you need to force boot_info_script to run a certain version,
+	  If multiple versions of Boot Info Script are detected in the same directory,
+	  Boot Info Script will list all versions found.
+	  In that case you need to force Boot Info Script to run a certain version,
 	  by adding "--this" as first argument (root rights needed):
 	
 	    ${0} --this <outputfile>
@@ -137,13 +137,13 @@ help () {
 
 ## Download the last development version of BIS from git: ##
 #
-#   ./boot_info_script.sh --update <filename>
+#   ./bootinfoscript --update <filename>
 #
 #   If no filename is specified, the file will be saved in the home dir as
-#   "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
+#   "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
 update () {
-  local git_bis_url='http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=blob_plain;f=boot_info_script.sh;hb=HEAD';
+  local git_bis_url='http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=blob_plain;f=bootinfoscript;hb=HEAD';
   local git_commit_url='http://bootinfoscript.sourceforge.net/bis-last-commit.txt'
 
   # Check if date is available.
@@ -158,7 +158,7 @@ update () {
   if [ ! -z "$1" ] ; then
      GIT_BIS_FILENAME="$1";
   else
-     GIT_BIS_FILENAME="${HOME}/boot_info_script_${UTC_TIME/ /_}.sh"
+     GIT_BIS_FILENAME="${HOME}/bootinfoscript_${UTC_TIME/ /_}"
   fi
 
   # Check if wget or curl is available
@@ -188,9 +188,9 @@ update () {
 
 ## Display version, release, last git commit and git retrieval date of the script when asked: ##
 #
-#   ./boot_info_script.sh -v
-#   ./boot_info_script.sh -V
-#   ./boot_info_script.sh --version 
+#   ./bootinfoscript -v
+#   ./bootinfoscript -V
+#   ./bootinfoscript --version 
 
 version () {
   printf '\nBoot Info Script version: %s\nRelease date:             %s' "${VERSION}" "${RELEASE_DATE}";
@@ -345,32 +345,32 @@ fi
 
 
 if [ ${Check_Prog} -eq 0 ] ; then
-   printf '\nPlease install the missing program(s) and run boot_info_script again.\n' >&2;
+   printf '\nPlease install the missing program(s) and run Boot Info Script again.\n' >&2;
    exit 1;
 fi
 
 
 
-## Check if there are other boot_info_script.sh files in the same directory. ##
+## Check if there are other bootinfoscript files in the same directory. ##
 #
 #   This can be useful when BIS was downloaded multiple times with Firefox, Chromium, ...
 #   Those browsers will add a suffix to the filename, when there was already
 #   a file with the same name:
 #
-#     boot_info_script(<number>).sh
+#     bootinfoscript(<number>)
 #
 #   To force BIS to run a certain version, add "--this" as first argument:
 #
-#     ./boot_info_script.sh --this <outputfile>
+#     ./bootinfoscript --this <outputfile>
 #
 
 if [ ${this_BIS} -eq 0 ] ; then
    declare -a BIS_files;
 
-   BIS_files=( $(ls "$(dirname "$0")/boot_info_script.sh" "$(dirname \"$0\")"/boot_info_script\(*\).sh 2> /dev/null) );
+   BIS_files=( $(ls "$(dirname "$0")/bootinfoscript" "$(dirname \"$0\")"/bootinfoscript\(*\) 2> /dev/null) );
 
    if [ "${#BIS_files[*]}" -ge 2 ] ; then
-      printf 'Multiple boot_info_script files where found:\n\n';
+      printf 'Multiple bootinfoscript files where found:\n\n';
 
       for i in ${!BIS_files[@]} ; do
 	eval $(echo 'BIS_'$(grep -m1 '^VERSION' "${BIS_files[$i]}") );
@@ -3127,8 +3127,8 @@ else
    #
    #   gzip a copy of the RESULTS file only when -g or --gzip is passed on the command line. 
    #
-   #   ./boot_info_script.sh -g <outputfile> 
-   #   ./boot_info_script.sh --gzip <outputfile> 
+   #   ./bootinfoscript -g <outputfile> 
+   #   ./bootinfoscript --gzip <outputfile> 
 
    if [ ${gzip_output} -eq 1 ] ; then
       cat "${LogFile}" | gzip -9 > "${LogFile}.gz";
