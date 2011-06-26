@@ -1381,6 +1381,8 @@ syslinux_info () {
   local ADVoffset ADV_calculated_checksum ADV_read_checksum ADVentry_offset;
   local tag='999' tag_len label;
 
+  local csum;
+
 
 
   # Clear previous Syslinux message string.
@@ -1518,9 +1520,14 @@ syslinux_info () {
        #  - add each dword to the checksum value.
        #  - the value of the checksum after adding all dwords of ldlinux.sys should be 0.
 
-       if [ $(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
-	    | ${AWK} 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' ) -ne 0 ] ; then
+       csum=$(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
+	    | ${AWK} 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' );
 
+       if [ $(expr index "${csum}" 'e') -ne 0 ] ; then
+	  # Check if the ${csum} variable contains an 'e'.
+	  # "busybox awk" gives values like 3.20611e+09 instead of normal integer numbers.
+	  Syslinux_Msg="${Syslinux_Msg} The integrity of Syslinux couldn't be verified (install gawk).";
+       elif [ ${csum} -ne 0 ] ; then
 	  Syslinux_Msg="${Syslinux_Msg} The integrity check of Syslinux failed.";
 	  return;
        fi
