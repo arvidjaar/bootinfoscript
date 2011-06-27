@@ -1794,6 +1794,11 @@ grub2_info () {
 		if [ $(type unlzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
+		      # Correct the offset to the lzma stream, when 8 subsequent bytes of zeros are at the start of this offset, 
+		      if [ $(hexdump -v -s ${offset_lzma} -n 8 -e '1/1 "%02x"'  ${core_img_file}) = '0000000000000000' ] ; then
+			 offset_lzma=$(( ${offset_lzma} + 8 ));
+		      fi
+
 		      # Calculate the uncompressed size to which the compressed lzma stream needs to be expanded. 
 		      lzma_uncompressed_size=$(( ${total_module_size} + ${kernel_image_size} - ${offset_lzma} + 512 ));
 
