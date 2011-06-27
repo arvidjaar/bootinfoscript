@@ -2298,7 +2298,7 @@ Get_Partition_Info() {
 
 
 
-  ## Exclude partitions which contain no information, or which we (currently) don't know how to  accces. ##
+  ## Exclude partitions which contain no information, or which we (currently) don't know how to accces. ##
 
   case "${type}" in
 	'BIOS Boot partition'	) part_no_mount=1;;
