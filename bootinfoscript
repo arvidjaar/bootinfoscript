@@ -2311,7 +2311,10 @@ Get_Partition_Info() {
   esac
 
   if [ "${part_no_mount}" -eq 0 ] ; then
-     CheckMount=$(mount | ${AWK} -F "${TAB}" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }');
+
+     # Look for a mount point of the current partition.
+     # If multiple mount points are found, use the one with the shortest pathname.
+     CheckMount=$(mount | ${AWK} -F "${TAB}" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }' | sort | ${AWK} '{ print $0; exit}');
 
      # Check whether partition is already mounted.
      if [ x"${CheckMount}" != x'' ] ; then 
