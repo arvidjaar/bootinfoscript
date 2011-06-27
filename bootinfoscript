@@ -704,9 +704,11 @@ fdisks () {
 
 ##  A function which checks whether a file is on a mounted partition. ##
 
-# list of mountpoints for devices: also allow mount points with spaces.
+# List of mount points for devices: also allow mount points with spaces.
 
-MountPoints=$(mount | ${AWK} -F "${TAB}" '{ if (($1 ~ "/dev") && ($3 != "/")) print $3 }');
+MountPoints=$(mount \
+	      | ${AWK} -F "${TAB}" '{ if ( ($1 ~ "^/dev") && ($3 != "/") ) { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 } }' \
+	      | sort -u);
 
 
 FileNotMounted () {	
