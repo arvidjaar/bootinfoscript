@@ -2416,6 +2416,17 @@ Get_Partition_Info() {
 	#   If found displays their names.
 
 	if [ "${type}" = 'vfat' ] ; then
+	   # Check FAT filesystems for EFI boot files.
+	   for file in "${mountname}"/efi/*/*.efi ; do
+	     # Remove "${mountname}" part of the filename.
+	     file="${file#${mountname}}";
+
+	     if [ -f "${mountname}${file}" ] && [ -s "${mountname}${file}" ] && FileNotMounted "${mountname}${file}" "${mountname}" ; then 
+		BootFiles="${BootFiles}  ${file}";          
+	     fi
+	   done
+
+	   # Other boot program files.
 	   Boot_Prog=${Boot_Prog_Fat};
 	else
 	   Boot_Prog=${Boot_Prog_Normal};  
