@@ -930,6 +930,7 @@ UUIDToSystem () {
     
     ## Windows GUIDs ##
     16e3c9e35c0bb84d817df92df00215ae)  system='Microsoft Reserved Partition (Windows)';;
+    # Same GUID as old GUID for "Basic data partition (Linux)"
   # a2a0d0ebe5b9334487c068b6b72699c7)  system='Basic data partition (Windows)';;
     aac808588f7ee04285d2e1e90434cfb3)  system='Logical Disk Manager metadata partition (Windows)';;
     a0609baf3114624fbc683311714a69ad)  system='Logical Disk Manager data partition (Windows)';;
@@ -941,7 +942,10 @@ UUIDToSystem () {
     28e7a1e2e332d611a6827b03a0000000)  system='Service Partition (HP-UX)';;
 
     ## Linux GUIDs ##
+    # Same GUID as "Basic data partition (Windows)" GUID
   # a2a0d0ebe5b9334487c068b6b72699c7)  system='Data partition (Linux)';;
+    # New GUID to avoid that Linux partitions show up as unformatted partitions in Windows.
+    af3dc60f838472478e793d69d8477de4)  system='Data partition (Linux)';;  
     0f889da1fc053b4da006743f0f84911e)  system='RAID partition (Linux)';;
     6dfd5706aba4c44384e50933c84b4f4f)  system='Swap partition (Linux)';;
     79d3d6e607f5c244a23c238f2a3df928)  system='Logical Volume Manager (LVM) partition (Linux)';;
