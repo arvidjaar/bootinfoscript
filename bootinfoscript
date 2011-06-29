@@ -992,6 +992,11 @@ UUIDToSystem () {
     c419b52d0fb1dc11b99b0019d1879648)  system='Concatenated partition (NetBSD)';;
     ec19b52d0fb1dc11b99b0019d1879648)  system='Encrypted partition (NetBSD)';;
 
+    ## ChromeOS GUIDs ##
+    5d2a3afe324fa741b725accc3285a309)  system="ChromeOS kernel";;
+    02e2b83c7e3bdd478a3c7ff2a13cfcec)  system="ChromeOS rootfs";;
+    3d750a2e489eb0438337b15192cb1b5e)  system="ChromeOS future use";;
+
 				   *)  system='-';
 				       echo 'Unknown GPT Partiton Type' >> ${Unknown_MBR};
 				       echo  ${type} >> ${Unknown_MBR};;   
