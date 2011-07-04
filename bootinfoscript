@@ -270,23 +270,32 @@ printf '\n\n';
 
 
 
+## Check whether Boot Info Script is run with root rights or not. ##
+
+if [ $(type whoami > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
+   echo 'Please install "whoami" and run Boot Info Script again.' >&2;
+   exit 1;
+elif [ $(whoami) != 'root' ] ; then
+   echo 'Please use "sudo" or become "root" to run this script.' >&2;
+   exit 1;
+fi
+
+
+
 ## Check if all necessary programs are available. ##
 
+# Programs that are in /bin or /usr/bin.
 Programs='
 	basename
-	blkid
 	cat
 	chown
 	dd
 	dirname
 	expr
-	fdisk
-	filefrag
 	fold
 	grep
 	gzip
 	hexdump
-	losetup
 	ls
 	mkdir
 	mount
@@ -296,12 +305,19 @@ Programs='
 	sed
 	sort
 	umount
-	wc
-	whoami'
+	wc'
+
+# Programs that are in /usr/sbin or /sbin.
+Programs_SBIN='
+	blkid
+	fdisk
+	filefrag
+	losetup'
+
 
 Check_Prog=1;
 
-for Program in ${Programs} ; do
+for Program in ${Programs} ${Programs_SBIN}; do
   if [ $(type ${Program} > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
      echo "\"${Program}\" could not be found." >&2;
      Check_Prog=0;
@@ -380,15 +396,6 @@ if [ ${this_BIS} -eq 0 ] ; then
       printf '\nAre you sure you want to run this version? If so, run:\n\n  %s --this %s\n\n' "$0" "$*";
       exit 1;
    fi
-fi
-
-
-
-## Check whether script is run with root rights or not. ##
-
-if [ $(whoami) != 'root' ] ; then
-   echo 'Please use "sudo" or become "root" to run this script.' >&2;
-   exit 1;
 fi
 
 
