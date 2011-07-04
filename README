@@ -1,14 +1,15 @@
-Usage boot_info_script:
+
+Usage Boot Info Script:
 -----------------------
 
   Run the script as sudoer:
 
-    sudo bash ./boot_info_script.sh <outputfile>
+    sudo ./bootinfoscript <outputfile>
 
   or if your operating system does not use sudo:
 
     su -
-    bash ./boot_info_script.sh <outputfile>
+    ./bootinfoscript <outputfile>
 
 
   When running the script, without specifying an output file, all the output
@@ -23,38 +24,46 @@ Usage boot_info_script:
 
 
   To get version number, release date, last git commit and git retrieval date
-  of this script, use:
-    (no root rights needed)
+  of this script, use (no root rights needed):
 
-    bash ./boot_info_script.sh -v
-    bash ./boot_info_script.sh -V
-    bash ./boot_info_script.sh --version
+    ./bootinfoscript -v
+    ./bootinfoscript -V
+    ./bootinfoscript --version
+
 
   To get this help text, use (no root rights needed):
 
-    bash ./boot_info_script.sh -h
-    bash ./boot_info_script.sh -help
-    bash ./boot_info_script.sh --help
+    ./bootinfoscript -h
+    ./bootinfoscript -help
+    ./bootinfoscript --help
+
 
   To automatically gzip a copy of the output file, use (root rights needed):
 
-    bash ./boot_info_script.sh -g <outputfile>
-    bash ./boot_info_script.sh --gzip <outputfile>
+    ./bootinfoscript -g <outputfile>
+    ./bootinfoscript --gzip <outputfile>
 
-  The last development version of boot_info_script can be downloaded, with:
+
+  To write the output to stdout instead of a file, use (root rights needed):
+
+    ./bootinfoscript --stdout
+
+
+  The last development version of Boot Info Script can be downloaded, with:
     (no root rights needed)
 
-    bash ./boot_info_script.sh --update <filename>
+    ./bootinfoscript --update <filename>
 
   If no filename is specified, the file will be saved in the home dir as
-  "boot_info_script_YYYY-MM-DD_hh:mm:ss.sh".
+  "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
-  If multiple versions of boot_info_script are detected in the same directory,
-  boot_info_script will list all versions found.
-  In that case you need to force boot_info_script to run a certain version,
+
+  If multiple versions of Boot Info Script are detected in the same directory,
+  Boot Info Script will list all versions found.
+  In that case you need to force Boot Info Script to run a certain version,
   by adding "--this" as first argument (root rights needed):
 
-    bash ./boot_info_script.sh --this <outputfile>
+    ./bootinfoscript --this <outputfile>
 
 
 
