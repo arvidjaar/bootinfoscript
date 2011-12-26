@@ -1883,7 +1883,7 @@ grub2_info () {
 		   # When unlzma isn't available, we can't get the core_dir, but we still can show the other info.
 		   core_dir='??';
 
-		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "unlzma".' >> ${Error_Log};
+		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "unlzma".' >&2;
 		fi
 
 	     else
@@ -2091,7 +2091,7 @@ Get_Partition_Info() {
      # Don't display the error message from blkid for extended partition.
      cat ${Tmp_Log} >> ${Trash};
   else
-     cat ${Tmp_Log} >> ${Error_Log};
+     cat ${Tmp_Log} >&2;
   fi
 
   # Display the File System Type.
@@ -2442,7 +2442,7 @@ Get_Partition_Info() {
 	      # Remove Wubu loop device, if created by BIS.
 	      [[ ${WubiDev} -eq 0 ]] && losetup -d "${Wubi}";
 	   else 
-	      echo "Found Wubi on ${name}. But could not create a loop device." >> ${Error_Log};
+	      echo "Found Wubi on ${name}. But could not create a loop device." >&2;
 	   fi
 	fi
                     
