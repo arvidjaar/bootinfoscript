@@ -342,6 +342,22 @@ done
 
 
 
+## Can we decompress a LZMA stream? ##
+#
+#   The Grub2 (v1.99) core_dir string is contained in a LZMA stream.
+#   See if we have xz or lzma installed to decompress the stream.
+#
+
+if [ $(type xz > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   UNLZMA='xz --format=lzma --decompress';
+elif [ $(type lzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   UNLZMA='lzma -cd';
+else
+   UNLZMA='none';
+fi
+
+
+
 ## Do we have gawk? ##
 #
 #   If we don't have gawk, look for "busybox awk".
@@ -1823,7 +1839,8 @@ grub2_info () {
 		       ${AWK} '{ found_at=match($0, "d1e9dffeffff0000" ); if (found_at == "0") { print "offset_lzma=0" } \
 			     else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 } }');
 
-		if [ $(type unlzma > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+		# Do we have xz or lzma installed?
+		if [ "${UNLZMA}" != 'none' ] ; then
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
 		      # Correct the offset to the lzma stream, when 8 subsequent bytes of zeros are at the start of this offset, 
@@ -1837,9 +1854,9 @@ grub2_info () {
 		      # Make lzma header (13 bytes): ${lzma_uncompressed_size} must be displayed in little endian format.
 		      printf '\x5d\x00\x00\x01\x00'$( printf '%08x' $((${total_uncompressed_size} - ${offset_lzma} + 512 ))  | awk '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
 
-		      # Get lzma_stream, add it after the lzma header and decompress it (unlzma).
+		      # Get lzma_stream, add it after the lzma header and decompress it.
 		      dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((${lzma_uncompressed_size} / ${offset_lzma} + 1)) 2>> ${Trash} \
-			 | cat ${Tmp_Log} - | unlzma > ${core_img_file_unlzma};
+			 | cat ${Tmp_Log} - | ${UNLZMA} > ${core_img_file_unlzma};
 
 		      # Get core dir.
 		      core_dir=$( hexdump -v -n 64 -e '"%_c"' ${core_img_file_unlzma} );
@@ -1880,10 +1897,10 @@ grub2_info () {
 		     fi		      
 		   fi
 		else
-		   # When unlzma isn't available, we can't get the core_dir, but we still can show the other info.
+		   # When xz or lzma isn't available, we can't get the core_dir, but we still can show the other info.
 		   core_dir='??';
 
-		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "unlzma".' >&2;
+		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "xz" or "lzma".' >&2;
 		fi
 
 	     else
