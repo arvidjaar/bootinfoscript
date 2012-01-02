@@ -2130,6 +2130,7 @@ Get_Partition_Info() {
 	0689) BST='Syslinux 3.00-3.52';
 	      syslinux_info ${part};
 	      BSI="${BSI} ${Syslinux_Msg}";;
+	7405) BST='Windows 7: FAT32';;
 	0734) BST='Dos_1.0';;
 	0745) BST='Vista: FAT32';;
 	089e) BST='MSDOS5.0: FAT16';;
