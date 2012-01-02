@@ -2132,9 +2132,9 @@ Get_Partition_Info() {
 	      BSI="${BSI} ${Syslinux_Msg}";;
 	7405) BST='Windows 7: FAT32';;
 	0734) BST='Dos_1.0';;
-	0745) BST='Vista: FAT32';;
+	0745) BST='Windows Vista: FAT32';;
 	089e) BST='MSDOS5.0: FAT16';;
-	08cd) BST='Windows XP';;
+	08cd) BST='Windows XP: NTFS';;
 	0b60) BST='Dell Utility: FAT16';; 
 	0bd0) BST='MSWIN4.1: FAT32';;
 	0e00) BST='Dell Utility: FAT16';;
@@ -2151,7 +2151,7 @@ Get_Partition_Info() {
 	4445) BST='Dell Restore: FAT32';;
 	55aa) case ${Bytes80_to_83} in
 		55aa750a) BST='Grub4Dos: FAT32';;
-		55aa*   ) BST='Windows Vista/7';;	# 55aa7506 = Windows Vista
+		55aa*   ) BST='Windows Vista/7: NTFS';;	# 55aa7506 = Windows Vista
 	      esac;;
 	55cd) BST='FAT32';;
 	5626) BST='Grub4Dos: EXT2/3/4';;
@@ -2173,7 +2173,7 @@ Get_Partition_Info() {
 	7e1e) BST='Grub4Dos: FAT12/16';;
 	8a56) BST='Acronis SZ: FAT32';;
 	83e1) BST='ISOhybrid with partition support (Syslinux 4.00-4.04)';;
-	8ec0) BST='Windows XP';;
+	8ec0) BST='Windows XP: NTFS';;
 	8ed0) BST='Dell Recovery: FAT32';;
 	b106) BST='Syslinux 4.00-4.02';
 	      syslinux_info ${part};
@@ -2183,9 +2183,9 @@ Get_Partition_Info() {
 	b6d1) BST='Windows XP: FAT32';;
 	e2f7) BST='FAT32, Non Bootable';;
 	e879) BST='ISOhybrid (Syslinux 3.74-3.80)';;
-	e9d8) BST='Windows Vista/7';;
+	e9d8) BST='Windows Vista/7: NTFS';;
 	f6f6) BST='- (cleared BS by FDISK)';;
-	fa33) BST='Windows XP';;
+	fa33) BST='Windows XP: NTFS';;
 	fbc0) BST='ISOhybrid (Syslinux 3.81)';;
 
 	## If Grub or Grub 2 is in the boot sector, investigate the embedded information. ##
