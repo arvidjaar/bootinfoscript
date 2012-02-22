@@ -1962,7 +1962,7 @@ get_embedded_menu () {
   # Check if magic bytes that go before the embedded menu, are present.
   offset_menu=$(dd if="${source}" count=4 bs=128k 2>> ${Trash} | hexdump -v -e '/1 "%02x"' | grep -b -o 'b0021ace000000000000000000000000');
 
-  if [ -n ${offset_menu} ] ; then
+  if [ -n "${offset_menu}" ] ; then
      # Magic found.
      titlebar_gen "${titlename}" " embedded menu";
      echo '--------------------------------------------------------------------------------' >> "${Log1}";
