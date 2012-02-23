@@ -314,6 +314,7 @@ Programs='
 	hexdump
 	ls
 	mkdir
+	mktemp
 	mount
 	printf
 	pwd
@@ -625,19 +626,8 @@ fi
 
 
 ## Create temporary directory ##
-#
-#   Create previously non-existing  folder of the form of:
-#     /tmp/BootInfo0, /tmp/BootInfo1, /tmp/BootInfo2, ... 
 
-Folder=/tmp/BootInfo;
-i=0;
-
-while (! mkdir ${Folder}${i} 2>/dev/null) ; do  
-  i=$((${i}+1));
-  wait;
-done
-
-Folder=${Folder}${i};
+Folder=$(mktemp -t -d BootInfo-XXXXXXXX);
 
 
 
