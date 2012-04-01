@@ -1,15 +1,29 @@
 CHANGELOG:
 ==========
 
-Version 0.61 (2010-05-)
+Version 0.61 (2012-04-01)
+  * Add README file.
   * Add --update switch to make it easier to download the last development
     version.
-  * Also detect grub2 files when they are located in /grub2 or /boot/grub2
-   (Mandriva).
+  * Also detect grub2 files when they are located in /grub2 or /boot/grub2.
+  * Make sure that BIS is run with bash as shell interpreter.
+  * Added --stdout switch: write results to standard output instead of a file.
+  * "boot_info_script.sh" file renamed to "bootinfoscript".
+  * List EFI boot files.
+  * Fix displaying of config file string for some grub2 (v1.99) binaries.
+  * New GUIDs added: - new GUID for Linux basic data partition
+                     - Chrome OS partitions
+  * Check for root rights before checking the list of all needed programs, so
+    it works also correctly on systems where not all programs are in the $PATH
+    variable of a normal user.
+  * Detect if xz or lzma is available on the system (replaces unlzma command).
+  * Add filesystem info for the detected Windows boot sector code.
+  * Fix a crash in BIS which occured when processing a modified grub4dos boot
+    loader file which inserts a SLIC table in the ACPI table.
 
-Version 0.60 (2010-05-17)
+Version 0.60 (2011-05-17)
   * New maintainer: Gert Hulselmans.
-  * boot_info_script is now released under the MIT license.
+  * BIS is now released under the MIT license.
   * Add this CHANGELOG file.
   * Source code changes are now tracked in git:
       http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=summary
