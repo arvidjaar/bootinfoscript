@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION='0.60';
-RELEASE_DATE='17 May 2011';
+VERSION='0.61';
+RELEASE_DATE='1 April 2012';
 LAST_GIT_COMMIT='';
 RETRIEVAL_DATE='';
 ################################################################################
