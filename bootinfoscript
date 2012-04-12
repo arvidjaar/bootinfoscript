@@ -1847,7 +1847,7 @@ grub2_info () {
 
 		      # Get lzma_stream, add it after the lzma header and decompress it.
 		      dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((${lzma_uncompressed_size} / ${offset_lzma} + 1)) 2>> ${Trash} \
-			 | cat ${Tmp_Log} - | ${UNLZMA} > ${core_img_file_unlzma};
+			 | cat ${Tmp_Log} - | ${UNLZMA} 2>> ${Trash} > ${core_img_file_unlzma};
 
 		      # Get core dir.
 		      core_dir=$( hexdump -v -n 64 -e '"%_c"' ${core_img_file_unlzma} );
