@@ -1808,7 +1808,7 @@ grub2_info () {
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
 
-	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '52e82801' ] ) ; then
+	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] ) ; then
 	     # core.img file was found.
 	     core_img_found=1;
 
