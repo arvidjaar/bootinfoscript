@@ -58,14 +58,6 @@ Usage Boot Info Script:
   "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
 
-  If multiple versions of Boot Info Script are detected in the same directory,
-  Boot Info Script will list all versions found.
-  In that case you need to force Boot Info Script to run a certain version,
-  by adding "--this" as first argument (root rights needed):
-
-    ./bootinfoscript --this <outputfile>
-
-
 
 Features:
 ---------
