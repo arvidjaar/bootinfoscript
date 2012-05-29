@@ -511,7 +511,7 @@ Boot_Files_Normal='
 	/burg.cfg	/burg/burg.cfg	/boot/burg/burg.cfg
 	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf	/grub2/grub.conf	/boot/grub2/grub.conf
 	/ubuntu/disks/boot/grub/menu.lst	/ubuntu/disks/install/boot/grub/menu.lst	/ubuntu/winboot/menu.lst
-	/boot.ini	/BOOT.INI
+	/boot.ini	/BOOT.INI	/Boot.ini
 	/etc/fstab
 	/etc/lilo.conf	/lilo.conf
 	/syslinux.cfg	/syslinux/syslinux.cfg	/boot/syslinux/syslinux.cfg
