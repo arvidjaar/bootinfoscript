@@ -404,7 +404,7 @@ Boot_Prog_Normal='
 	/ubuntu/disks/root.disk
 	/ubuntu/disks/home.disk
 	/ubuntu/disks/swap.disk
-	/core.img	/grub/core.img		/boot/grub/core.img	/grub2/core.img	/boot/grub2/core.img
+	/core.img	/grub/core.img		/boot/grub/core.img	/grub2/core.img	/boot/grub2/core.img	/grub2/i386-pc/core.img	/boot/grub2/i386-pc/core.img
 	/burg/core.img	/boot/burg/core.img
 	/ldlinux.sys	/syslinux/ldlinux.sys	/boot/syslinux/ldlinux.sys
 	/extlinux.sys	/extlinux/extlinux.sys	/boot/extlinux/extlinux.sys
@@ -434,7 +434,7 @@ Boot_Prog_Fat='
 	/ubuntu/disks/root.disk
 	/ubuntu/disks/home.disk
 	/ubuntu/disks/swap.disk
-	/core.img	/grub/core.img		/boot/grub/core.img	/grub2/core.img	/boot/grub2/core.img
+	/core.img	/grub/core.img		/boot/grub/core.img	/grub2/core.img	/boot/grub2/core.img	/grub2/i386-pc/core.img	/boot/grub2/i386-pc/core.img
 	/burg/core.img	/boot/burg/core.img
 	/ldlinux.sys	/syslinux/ldlinux.sys	/boot/syslinux/ldlinux.sys
 	/extlinux.sys	/extlinux/extlinux.sys	/boot/extlinux/extlinux.sys
