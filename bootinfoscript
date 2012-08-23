@@ -556,7 +556,6 @@ else
        j=0;
     fi
     j=$((${j}+1));
-    wait;
   done
 
   LogFile="${LogFile}${j}.txt";  ## The RESULTS file. ##
