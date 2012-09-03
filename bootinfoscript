@@ -135,7 +135,8 @@ help () {
 #   "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
 update () {
-  local git_bis_url='http://bootinfoscript.git.sourceforge.net/git/gitweb.cgi?p=bootinfoscript/bootinfoscript;a=blob_plain;f=bootinfoscript;hb=HEAD';
+  local git_bis_start_url='http://sourceforge.net/p/bootinfoscript/code/ci';
+  local git_bis_end_url='tree/bootinfoscript?format=raw';
   local git_commit_url='http://bootinfoscript.sourceforge.net/bis-last-commit.txt'
 
   # Check if date is available.
@@ -156,19 +157,25 @@ update () {
   # Check if wget or curl is available
   if [ $(type wget > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf '\nDownloading last development version of Boot Info Script from git:\n\n';
-     wget -O "${GIT_BIS_FILENAME}" "${git_bis_url}";
      LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}" 2> /dev/null);
+     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
+     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:41}";
+
+     wget -O "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
   elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf 'Downloading last development version of Boot Info Script from git:\n\n';
-     curl -o "${GIT_BIS_FILENAME}" "${git_bis_url}";
      LAST_GIT_COMMIT=$(curl "${git_commit_url}");
+     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
+     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:41}";
+
+     curl -o "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
   else
      printf '"wget" or "curl" could not be found.\nInstall at least one of them and try again.\n' >&2;
      exit 1;
   fi
 
   # Set the retrieval date in just downloaded script.
-  sed -i -e "4,0 s@LAST_GIT_COMMIT='';@LAST_GIT_COMMIT='${LAST_GIT_COMMIT}';@" \
+  sed -i -e "4,0 s@LAST_GIT_COMMIT='';@LAST_GIT_COMMIT='${LAST_GIT_COMMIT_SHORTLOG}';@" \
 	 -e "5,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" \
 	 "${GIT_BIS_FILENAME}";
 
