@@ -1971,15 +1971,20 @@ grub2_info () {
 
      Grub2_Msg="${Grub2_Msg}. core.img is at this location"
 
-     partition=$(( ${partition} + 1 ));
-
      if [ ${embedded_config_found} -eq 0 ] ; then
 	# No embedded config file found.
 
-	if [ ${partition} -eq 255 ] ; then
-	   Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
-	else
-	   Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
+	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir}";
+
+	if [ "${grub2_version%.*}" -lt 2 ]; then
+	   partition=$(( ${partition} + 1 ));
+	   if [ ${partition} -eq 255 ] ; then
+	      Grub2_Msg="${Grub2_Msg} on this drive";
+	   else
+	      Grub2_Msg="${Grub2_Msg} in partition ${partition}";
+	   fi
+        else
+	   Grub2_Msg="${Grub2_Msg} on this drive";
 	fi
 
      else

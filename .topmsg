@@ -1,6 +1,8 @@
 From: Andrey Borzenkov <arvidjaar@gmail.com>
-Subject: [PATCH] fu/grub2/partition
+Subject: [PATCH] do not print bogus partition number for GRUB 2.00
 
-<patch description>
+core.img partition number is computed only for GRUB < 2.00.
+Slightly reorder message and do not print bogus partition if
+GRUB is 2.00 or above.
 
 Signed-off-by: Andrey Borzenkov <arvidjaar@gmail.com>
