@@ -345,36 +345,31 @@ fi
 
 
 
-## Do we have gawk? ##
+## Do we have gawk or (a recent) mawk? ##
 #
-#   If we don't have gawk, look for "busybox awk".
+#   If we don't have gawk, look for "mawk v1.3.4" or newer.
 #
 
 # Make a variable named ${TAB}, needed for setting the separator for awk to a tab.
 TAB=$(printf "\t");
 
-# Set awk binary to gawk.
-AWK='gawk';
+if [ $(type gawk > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   # Set awk binary to gawk.
+   AWK='gawk';
+elif [ $(type mawk > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   MAWK_version="$(mawk -W version 2>&1)";
+   MAWK_version="${MAWK_version:0:10}";
 
-
-if [ $(type gawk > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
-   # Do we have a busybox version?
-   for BUSYBOX in 'busybox' '/usr/lib/initramfs-tools/bin/busybox' ; do
-     # And if we have one, does is support "awk"?
-     if [ $(type ${BUSYBOX} > /dev/null 2>&1 ; echo $?) -eq 0 ] && [ $(echo 'test' | ${BUSYBOX} awk '{ print $0 }' > /dev/null 2>&1; echo $?) -eq 0 ] ; then
-	printf '\n"gawk" could not be found, using "%s awk" instead.\nThis may lead to unreliable results.\n\n' "${BUSYBOX}" >&2;
-
-	# Set awk binary to busybox's awk.
-	AWK="${BUSYBOX} awk";
-	break;
-     fi
-   done
-
-   # If no busybox (or one without awk support) is found, "${AWK}" is still set to "gawk".
-   if [ "${AWK}" == 'gawk' ] ; then
-      echo '"gawk" could not be found.' >&2;
-      Check_Prog=0;
+   if [ "${MAWK_version}" = 'mawk 1.3.3' ]; then
+      printf '"mawk v1.3.3" has known bugs.\nInstall "mawk v1.3.4" or newer from http://invisible-island.net/mawk/ or use "gawk" instead.\n' >&2;
+	  Check_Prog=0;
+   else
+      # Set awk binary to mawk (version 1.3.4 or higher).
+      AWK='mawk';
    fi
+else
+   printf 'Install "gawk" or "mawk v1.3.4" (or newer) from http://invisible-island.net/mawk/.\n' >&2;
+   Check_Prog=0;
 fi
 
 
