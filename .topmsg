@@ -2,7 +2,10 @@ From: Andrey Borzenkov <arvidjaar@gmail.com>
 Subject: [PATCH] do not print bogus partition number for GRUB 2.00
 
 core.img partition number is computed only for GRUB < 2.00.
-Slightly reorder message and do not print bogus partition if
+GRUB 2.00 never performs cross-disk installation and always
+looks for core.img on the same disk where boot.img is located.
+
+Slightly reorder messages and do not print bogus partition if
 GRUB is 2.00 or above.
 
 Signed-off-by: Andrey Borzenkov <arvidjaar@gmail.com>
