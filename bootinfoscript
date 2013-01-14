@@ -307,6 +307,7 @@ Programs='
 	rm
 	sed
 	sort
+	tr
 	umount
 	wc'
 
@@ -345,36 +346,31 @@ fi
 
 
 
-## Do we have gawk? ##
+## Do we have gawk or (a recent) mawk? ##
 #
-#   If we don't have gawk, look for "busybox awk".
+#   If we don't have gawk, look for "mawk v1.3.4" or newer.
 #
 
 # Make a variable named ${TAB}, needed for setting the separator for awk to a tab.
 TAB=$(printf "\t");
 
-# Set awk binary to gawk.
-AWK='gawk';
+if [ $(type gawk > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   # Set awk binary to gawk.
+   AWK='gawk';
+elif [ $(type mawk > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
+   MAWK_version="$(mawk -W version 2>&1)";
+   MAWK_version="${MAWK_version:0:10}";
 
-
-if [ $(type gawk > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
-   # Do we have a busybox version?
-   for BUSYBOX in 'busybox' '/usr/lib/initramfs-tools/bin/busybox' ; do
-     # And if we have one, does is support "awk"?
-     if [ $(type ${BUSYBOX} > /dev/null 2>&1 ; echo $?) -eq 0 ] && [ $(echo 'test' | ${BUSYBOX} awk '{ print $0 }' > /dev/null 2>&1; echo $?) -eq 0 ] ; then
-	printf '\n"gawk" could not be found, using "%s awk" instead.\nThis may lead to unreliable results.\n\n' "${BUSYBOX}" >&2;
-
-	# Set awk binary to busybox's awk.
-	AWK="${BUSYBOX} awk";
-	break;
-     fi
-   done
-
-   # If no busybox (or one without awk support) is found, "${AWK}" is still set to "gawk".
-   if [ "${AWK}" == 'gawk' ] ; then
-      echo '"gawk" could not be found.' >&2;
-      Check_Prog=0;
+   if [ "${MAWK_version}" = 'mawk 1.3.3' ]; then
+      printf '"mawk v1.3.3" has known bugs.\nInstall "mawk v1.3.4" or newer from http://invisible-island.net/mawk/ or use "gawk" instead.\n' >&2;
+	  Check_Prog=0;
+   else
+      # Set awk binary to mawk (version 1.3.4 or higher).
+      AWK='mawk';
    fi
+else
+   printf 'Install "gawk" or "mawk v1.3.4" (or newer) from http://invisible-island.net/mawk/.\n' >&2;
+   Check_Prog=0;
 fi
 
 
@@ -1781,7 +1777,7 @@ grub2_info () {
 			    else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 "; lzma_decode_last8bytes=" substr($0,found_at,16) ";" } }');
 
 		if [ "${grub2_version}" = '1.99-2.00' ] ; then
-                  if [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" -o "${lzma_decode_last8bytes}" = "d1e9dffeffff8db6" ] ; then
+		   if ( [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" ] || [ "${lzma_decode_last8bytes}" = "d1e9dffeffff8db6" ] ) ; then
 		      grub2_version='2.00';
 		   else
 		      grub2_version='1.99';
@@ -1812,7 +1808,7 @@ grub2_info () {
 		if [ "${UNLZMA}" != 'none' ] ; then
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
-		      # Correct the offset to the lzma stream, when 8 subsequent bytes of zeros are at the start of this offset, 
+		      # Correct the offset to the lzma stream, when 8 subsequent bytes of zeros are at the start of this offset.
 		      if [ $(hexdump -v -s ${offset_lzma} -n 8 -e '1/1 "%02x"'  ${core_img_file}) = '0000000000000000' ] ; then
 			 offset_lzma=$(( ${offset_lzma} + 8 ));
 		      fi
@@ -1892,12 +1888,11 @@ grub2_info () {
 		if [ "${UNLZMA}" != 'none' ] ; then
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
-		      # Correct the offset to the lzma stream
-		      # GRUB2 pads lzma_decompress.img to 16 bytes boundary
-		      # sanity check that pad bytes are zero
-		      padsize=$(( (((${offset_lzma} + 15) >> 4) << 4) - ${offset_lzma} ));
-		      if [ ${padsize} -gt 0 -a -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 "%02x"'  ${core_img_file} | tr -d 0)" ] ; then
-			 offset_lzma=$(( ${offset_lzma} + ${padsize} ));
+		      # Grub2 pads the start of the lzma stream to a 16 bytes boundary.
+		      # Correct the offset to the lzma stream if necessary (are the padded bytes zeros?).
+		      padsize=$(( (((${offset_lzma} + 15) >> 4) << 4) - ${offset_lzma} )); 
+		      if ( [ ${padsize} -gt 0 ] && [ -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 \"%02x\"'  ${core_img_file} | tr -d 0)" ] ) ; then 
+			 offset_lzma=$(( ${offset_lzma} + ${padsize} )); 
 		      fi
 
 
@@ -2440,6 +2435,8 @@ Get_Partition_Info() {
 	grep -q "W.i.n.d.o.w.s. .V.i.s.t.a"  "${mountname}"/{windows,Windows,WINDOWS}/{System32,system32}/{Winload,winload}.exe 2>> ${Trash} && OS='Windows Vista';
 
 	grep -q "W.i.n.d.o.w.s. .7" "${mountname}"/{windows,Windows,WINDOWS}/{System32,system32}/{Winload,winload}.exe 2>> ${Trash} && OS='Windows 7';
+
+	grep -q "w.i.n.8._." "${mountname}"/{windows,Windows,WINDOWS}/{System32,system32}/{Winload,winload}.exe 2>> ${Trash} && OS='Windows 8';
 
 	for WinOS in 'MS-DOS' 'MS-DOS 6.22' 'MS-DOS 6.21' 'MS-DOS 6.0' 'MS-DOS 5.0' 'MS-DOS 4.01' 'MS-DOS 3.3' 'Windows 98' 'Windows 95'; do
 	  grep -q "${WinOS}" "${mountname}"/{IO.SYS,io.sys} 2>> ${Trash} && OS="${WinOS}";
