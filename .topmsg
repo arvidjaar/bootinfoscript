@@ -1,11 +1,23 @@
 From: Andrey Borzenkov <arvidjaar@gmail.com>
-Subject: [PATCH] do not print bogus partition number for GRUB 2.00
+Subject: [PATCH] fix printing of $prefix and embedded config in grub 2.00
 
-core.img partition number is computed only for GRUB < 2.00.
-GRUB 2.00 never performs cross-disk installation and always
-looks for core.img on the same disk where boot.img is located.
+Several related changes in grub2_info:
 
-Slightly reorder messages and do not print bogus partition if
-GRUB is 2.00 or above.
+- bug fix: $partition was computed for versions < 2.00 only. Do not
+  print bogus partition number if it is not defined.
+
+- enhancement: grub-install can create valid core.img that has both
+  $prefix and embedded config. And it is always possible to define
+  them manually. Because $prefix is set before config is evaluated
+  it provides important information to interpret embedded config and
+  should be shown always if available.
+
+- enhancement: check that $prefix is defined. It is optional in case
+  of grub 2.00.
+
+In grub 2.00 just print raw value of $prefix. If drive (and partition)
+is omitted, grub is using platform specific functions to fill them in.
+Instead of trying to guess, just let user to collect correct information
+which can then help to abalyze boot configuration.
 
 Signed-off-by: Andrey Borzenkov <arvidjaar@gmail.com>
