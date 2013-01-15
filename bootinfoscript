@@ -1968,14 +1968,19 @@ grub2_info () {
 	Grub2_Msg="${Grub2_Msg}. Grub2 is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
      fi
 
-     Grub2_Msg="${Grub2_Msg}. core.img is at this location. It looks for ${core_dir}";
+     Grub2_Msg="${Grub2_Msg}. core.img is at this location";
 
-     if [ "${grub2_version%.*}" -lt 2 ]; then
-	partition=$(( ${partition} + 1 ));
-	if [ ${partition} -eq 255 ] ; then
-	   Grub2_Msg="${Grub2_Msg} on this drive";
-	else
-	   Grub2_Msg="${Grub2_Msg} in partition ${partition}";
+     # In GRUB 2.00 core.img prefix is optional
+     if [ -n "${core_dir}" ]; then
+	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir}";
+
+	if [ -n "${partition}" ]; then
+	   partition=$(( ${partition} + 1 ));
+	   if [ ${partition} -eq 255 ] ; then
+	      Grub2_Msg="${Grub2_Msg} on this drive";
+	   else
+	      Grub2_Msg="${Grub2_Msg} in partition ${partition}";
+	   fi
 	fi
      fi
 
