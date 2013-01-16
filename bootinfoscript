@@ -2036,6 +2036,10 @@ get_embedded_menu () {
 #   - arg 3:  filename3
 #   - ......
 #
+#   Return values:
+#
+#   - 0:  None of the provided filenames was found.
+#   - 1:  At least one of the provided filenames was found.
 
 last_block_of_file () {
   local display='0';
@@ -2044,8 +2048,8 @@ last_block_of_file () {
   rm -f ${Tmp_Log};
 
   # "$@" contains all function arguments (filenames).
-  for file in $(ls "$@" 2>> ${Trash}) ; do
-    if [[ -f ${file} ]] && [[ -s ${file} ]] && FileNotMounted "${mountname}/${file}" "${mountname}" ; then
+  for file in "$@" ; do
+    if [[ -f "${file}" ]] && [[ -s "${file}" ]] && FileNotMounted "${mountname}/${file}" "${mountname}" ; then
 
        # There are at least 2 versions of filefrag.
        # For both versions, we can get the blocksize and the location of the block
@@ -2102,7 +2106,8 @@ last_block_of_file () {
 	  fi
        fi
 
-       # If any of the files passed as arguments, is found, return 1.
+       # Return 1, when we found at least one of the provided filenames,
+       # so we know when we need to display the content of ${Tmp_Log}.
        display=1;
     fi
   done
