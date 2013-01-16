@@ -351,9 +351,6 @@ fi
 #   If we don't have gawk, look for "mawk v1.3.4" or newer.
 #
 
-# Make a variable named ${TAB}, needed for setting the separator for awk to a tab.
-TAB=$(printf "\t");
-
 if [ $(type gawk > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
    # Set awk binary to gawk.
    AWK='gawk';
@@ -673,7 +670,7 @@ fdisks () {
      sfdisk -s "$1" 2>> ${Trash};
   else
      # Calculate the number of blocks from the number of sectors (divide by 2).
-     fdisk -lu "$1" 2>> ${Trash} | awk '$0 ~ /, .*, .*, .*/ { print $(NF - 1) / 2 }';
+     fdisk -lu "$1" 2>> ${Trash} | ${AWK} '$0 ~ /, .*, .*, .*/ { print $(NF - 1) / 2 }';
   fi
 }
    
@@ -684,7 +681,7 @@ fdisks () {
 # List of mount points for devices: also allow mount points with spaces.
 
 MountPoints=$(mount \
-	      | ${AWK} -F "${TAB}" '{ if ( ($1 ~ "^/dev") && ($3 != "/") ) { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 } }' \
+	      | ${AWK} -F "\t" '{ if ( ($1 ~ "^/dev") && ($3 != "/") ) { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 } }' \
 	      | sort -u);
 
 
@@ -1511,11 +1508,7 @@ syslinux_info () {
        csum=$(hexdump -v -n $(( ${pa_data_sectors} * 512)) -e '/4 "%u\n"' ${Tmp_Log} \
 	    | ${AWK} 'BEGIN { csum=4294967296-1051853566 } { csum=(csum + $1)%4294967296 } END {print csum}' );
 
-       if [ $(expr index "${csum}" 'e') -ne 0 ] ; then
-	  # Check if the ${csum} variable contains an 'e'.
-	  # "busybox awk" gives values like 3.20611e+09 instead of normal integer numbers.
-	  Syslinux_Msg="${Syslinux_Msg} The integrity of Syslinux couldn't be verified (install gawk).";
-       elif [ ${csum} -ne 0 ] ; then
+       if [ ${csum} -ne 0 ] ; then
 	  Syslinux_Msg="${Syslinux_Msg} The integrity check of Syslinux failed.";
 	  return;
        fi
@@ -1586,7 +1579,7 @@ syslinux_info () {
 
 	     # Caculate the ADV checksum.
 	     ADV_calculated_checksum=$(hexdump -v -s $(( ${ADVoffset} + 8 )) -n $((512 - 3*4)) -e '/4 "%u\n"' ${Tmp_Log} \
-				     | awk 'BEGIN { csum='${ADV_MAGIC_CHECKSUM}' } { csum=(csum - $1 + 4294967296)%4294967296 } END { print csum }');
+				     | ${AWK} 'BEGIN { csum='${ADV_MAGIC_CHECKSUM}' } { csum=(csum - $1 + 4294967296)%4294967296 } END { print csum }');
 
 	     ADV_read_checksum=$(hexdump -s $(( ${ADVoffset} + 4 )) -n 4 -e '/4 "%u\n"' ${Tmp_Log});
 
@@ -1818,7 +1811,7 @@ grub2_info () {
 
 		      # Make lzma header (13 bytes): ${lzma_uncompressed_size} must be displayed in little endian format.
 		      printf '\x5d\x00\x00\x01\x00'$( printf '%08x' $((${lzma_uncompressed_size} - ${offset_lzma} + 512 )) \
-			 | awk '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
+			 | ${AWK} '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
 
 		      # Get lzma_stream, add it after the lzma header and decompress it.
 		      dd if=${core_img_file} bs=${offset_lzma} skip=1 count=$((${lzma_uncompressed_size} / ${offset_lzma} + 1)) 2>> ${Trash} \
@@ -1898,7 +1891,7 @@ grub2_info () {
 
 		      # Make lzma header (13 bytes): ${lzma_uncompressed_size} must be displayed in little endian format.
 		      printf '\x5d\x00\x00\x01\x00'$( printf '%08x' ${lzma_uncompressed_size} \
-			 | awk '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
+			 | ${AWK} '{printf "\\x%s\\x%s\\x%s\\x%s", substr($0,7,2), substr($0,5,2), substr($0,3,2), substr($0,1,2)}' )'\x00\x00\x00\x00' > ${Tmp_Log};
 
 
 		      # Get lzma_stream, add it after the lzma header and decompress it.
@@ -2413,7 +2406,7 @@ Get_Partition_Info() {
 
      # Look for a mount point of the current partition.
      # If multiple mount points are found, use the one with the shortest pathname.
-     CheckMount=$(mount | ${AWK} -F "${TAB}" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }' | sort | ${AWK} '{ print $0; exit}');
+     CheckMount=$(mount | ${AWK} -F "\t" '$0 ~ "^'${part}' " { sub(" on ", "\t", $0); sub(" type ", "\t", $0); print $2 }' | sort | ${AWK} '{ print $0; exit}');
 
      # Check whether partition is already mounted.
      if [ x"${CheckMount}" != x'' ] ; then 
@@ -3195,9 +3188,9 @@ printf "${MountFormat}\n" 'Device' 'Mount_Point' 'Type' 'Options' >> "${Log}";
 #  original:
 #    mount | grep ' / '| grep -v '^/'| sed  's/ on /'$Fis'/' |sed 's/ type /'$Fis'/'|sed  's/ (/'$Fis'(/'| gawk -F $Fis '{printf "'"$MountFormat"'", $1, $2, $3, $4 }'>>"$Log";
 #  new:
-#    mount | sort | gawk -F "${TAB}" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
+#    mount | sort | gawk -F "\t" '$0 ~ " / " { if ($1 !~ "^/") { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } } END { printf "\n" }' >> "${Log}";
 
-mount | sort | ${AWK} -F "${TAB}" '$0 ~ "^/dev" \
+mount | sort | ${AWK} -F "\t" '$0 ~ "^/dev" \
   { sub(" on ", "\t", $0); sub(" type ", "\t", $0); optionsstart=index($3, " ("); \
     printf "'"${MountFormat}"'", $1, $2, substr($3, 1, optionsstart - 1), substr($3, optionsstart + 1) } END { printf "\n" }' >> "${Log}";
 
