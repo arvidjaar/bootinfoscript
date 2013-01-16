@@ -897,6 +897,7 @@ UUIDToSystem () {
     41ee4d02e733d3119d690008c781f39f)  system='MBR partition scheme';;
     28732ac11ff8d211ba4b00a0c93ec93b)  system='EFI System partition';;
     4861682149646f6e744e656564454649)  system='BIOS Boot partition';;
+    dee2bfd3af3ddf11ba40e3a556d89593)  system="Intel Fast Flash (iFFS) partition (for Intel Rapid Start technology)";;
 
     ## GUIDs that are not unique for one OS ##
     a2a0d0ebe5b9334487c068b6b72699c7)  system='Data partition (Windows/Linux)';;
@@ -906,8 +907,8 @@ UUIDToSystem () {
     16e3c9e35c0bb84d817df92df00215ae)  system='Microsoft Reserved Partition (Windows)';;
     # Same GUID as old GUID for "Basic data partition (Linux)"
   # a2a0d0ebe5b9334487c068b6b72699c7)  system='Basic data partition (Windows)';;
-    aac808588f7ee04285d2e1e90434cfb3)  system='Logical Disk Manager metadata partition (Windows)';;
-    a0609baf3114624fbc683311714a69ad)  system='Logical Disk Manager data partition (Windows)';;
+    aac808588f7ee04285d2e1e90434cfb3)  system='Logical Disk Manager (LDM) metadata partition (Windows)';;
+    a0609baf3114624fbc683311714a69ad)  system='Logical Disk Manager (LDM) data partition (Windows)';;
     a4bb94ded106404da16abfd50179d6ac)  system='Windows Recovery Environment (Windows)';;
     90fcaf377def964e91c32d7ae055b174)  system='IBM General Parallel File System (GPFS) partition (Windows)';;
 
@@ -942,6 +943,7 @@ UUIDToSystem () {
     746f6f420000aa11aa1100306543ecac)  system='Apple Boot partition (Mac OS X)';;
     6562614c006caa11aa1100306543ecac)  system='Apple Label (Mac OS X)';;
     6f6365526576aa11aa1100306543ecac)  system='Apple TV Recovery partition (Mac OS X)';;
+    726f74536761aa11aa1100306543ecac)  system="Apple Core Storage (i.e. Lion FileVault) partition (Mac OS X)";;
 
     ## Solaris GUIDs ##
     45cb826ad21db21199a6080020736631)  system='Boot partition (Solaris)';;
@@ -970,6 +972,17 @@ UUIDToSystem () {
     5d2a3afe324fa741b725accc3285a309)  system="ChromeOS kernel";;
     02e2b83c7e3bdd478a3c7ff2a13cfcec)  system="ChromeOS rootfs";;
     3d750a2e489eb0438337b15192cb1b5e)  system="ChromeOS future use";;
+
+    ## Haiku GUIDs ##
+    31534642a33bf110802a4861696b7521)  system="Haiku BFS (Haiku)";;
+
+    ## MidnightBSD GUIDs ##
+    5ee4d5857c23e111b4b3e89a8f7fc3a7)  system="Boot partition (MidnightBSD) ";;
+    5ae4d5857c23e111b4b3e89a8f7fc3a7)  system="Data partition (MidnightBSD)";;
+    5be4d5857c23e111b4b3e89a8f7fc3a7)  system="Swap partition (MidnightBSD)";;
+    8bef94037e23e111b4b3e89a8f7fc3a7)  system="Unix File System (UFS) partition (MidnightBSD)";;
+    5ce4d5857c23e111b4b3e89a8f7fc3a7)  system="Vinum volume manager partition (MidnightBSD)";;
+    5de4d5857c23e111b4b3e89a8f7fc3a7)  system="ZFS partition (MidnightBSD)";;
 
 				   *)  system='-';
 				       echo 'Unknown GPT Partiton Type' >> ${Unknown_MBR};
