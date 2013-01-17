@@ -1,8 +1,8 @@
 #!/bin/bash
 VERSION='0.61';
 RELEASE_DATE='1 April 2012';
-LAST_GIT_COMMIT='';
-RETRIEVAL_DATE='';
+LAST_GIT_COMMIT_SHORTLOG='';
+LAST_GIT_COMMIT_DATE='';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
@@ -159,14 +159,16 @@ update () {
      printf '\nDownloading last development version of Boot Info Script from git:\n\n';
      LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}" 2> /dev/null);
      LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:41}";
+     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
+     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
 
      wget -O "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
   elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf 'Downloading last development version of Boot Info Script from git:\n\n';
      LAST_GIT_COMMIT=$(curl "${git_commit_url}");
      LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:41}";
+     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
+     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
 
      curl -o "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
   else
@@ -175,8 +177,8 @@ update () {
   fi
 
   # Set the retrieval date in just downloaded script.
-  sed -i -e "4,0 s@LAST_GIT_COMMIT='';@LAST_GIT_COMMIT='${LAST_GIT_COMMIT_SHORTLOG}';@" \
-	 -e "5,0 s/RETRIEVAL_DATE='';/RETRIEVAL_DATE='${UTC_TIME}';/" \
+  sed -i -e "4,0 s@LAST_GIT_COMMIT_SHORTLOG='';@LAST_GIT_COMMIT_SHORTLOG='${LAST_GIT_COMMIT_SHORTLOG}';@" \
+	 -e "5,0 s/LAST_GIT_COMMIT_DATE='';/LAST_GIT_COMMIT_DATE='${LAST_GIT_COMMIT_DATE}';/" \
 	 "${GIT_BIS_FILENAME}";
 
   printf '\nThe development version of Boot Info Script is saved as:\n"%s"\n\n' "${GIT_BIS_FILENAME}";
@@ -194,8 +196,9 @@ update () {
 version () {
   printf '\nBoot Info Script version: %s\nRelease date:             %s' "${VERSION}" "${RELEASE_DATE}";
 
-  if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
-     printf '\nLast git commit:          %s\nRetrieved from git on:    %s' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}";
+  if [ ! -z "${LAST_GIT_COMMIT_SHORTLOG}" ] ; then
+     printf '\nLast git commit:          %s\nCommit date:              %s' \
+            "${LAST_GIT_COMMIT_SHORTLOG}" "${LAST_GIT_COMMIT_DATE}";
   fi
 
   printf '\n\n';
@@ -248,8 +251,9 @@ process_args ${@};
 
 printf '\nBoot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}";
 
-if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
-   printf '\n  Last git commit:         %s\n  Retrieved from git on:   %s' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}";
+if [ ! -z "${LAST_GIT_COMMIT_SHORTLOG}" ] ; then
+   printf '\n  Last git commit:         %s\n  Commit date:             %s' \
+          "${LAST_GIT_COMMIT_SHORTLOG}" "${LAST_GIT_COMMIT_DATE}";
 fi
 
 printf '\n\n';
@@ -2735,8 +2739,9 @@ BIS_title=$(printf 'Boot Info Script %s      [%s]' "${VERSION}" "${RELEASE_DATE}
 printf -v BIS_title_space "%$(( ( 80 - ${#BIS_title} ) / 2 - 1 ))s";
 printf "${BIS_title_space}${BIS_title}\n" > "${Log}";
 
-if [ ! -z "${LAST_GIT_COMMIT}" ] ; then
-   printf '\nLast git commit:       %s\nRetrieved from git on: %s\n' "${LAST_GIT_COMMIT}" "${RETRIEVAL_DATE}" >> "${Log}";
+if [ ! -z "${LAST_GIT_COMMIT_SHORTLOG}" ] ; then
+   printf '\nLast git commit:       %s\nCommit date:           %s\n' \
+          "${LAST_GIT_COMMIT_SHORTLOG}" "${LAST_GIT_COMMIT_DATE}" >> "${Log}";
 fi
 
 printf '\n\n============================= Boot Info Summary: ===============================\n\n' >> "${Log}";
