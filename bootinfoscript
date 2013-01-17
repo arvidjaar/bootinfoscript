@@ -2106,8 +2106,8 @@ last_block_of_file () {
 	  fi
        fi
 
-       # Return 1, when we found at least one of the provided filenames,
-       # so we know when we need to display the content of ${Tmp_Log}.
+       # Return 1, when we find at least one of the provided filenames,
+       # so we know that we need to display the content of ${Tmp_Log} later.
        display=1;
     fi
   done
