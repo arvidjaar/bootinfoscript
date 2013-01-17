@@ -1,0 +1,12 @@
+From: Andrey Borzenkov <arvidjaar@gmail.com>
+Subject: [PATCH] support core.img consisting of multiple fragments
+
+core.img can be installed in multiple segments even when embedded
+in post-MBR gap, and has high chances of being split if installed
+directly from filesystem using block list mode. openSUSE is using
+installation on partition by default and is quite likely to get
+fragmented core.img.
+
+Support parsing block list and collecting all fragements.
+
+Signed-off-by: Andrey Borzenkov <arvidjaar@gmail.com>
