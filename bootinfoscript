@@ -1724,6 +1724,9 @@ grub2_info () {
   # with a more exact value later (needs to be a global variable).
   grub2_version="$3";
 
+  # Have we got plain file or need to collect full core.img from blocklists?
+  local core_source="$4";
+
   local sector_offset drive_offset directory_offset sector_nr drive_nr drive_nr_hex;
   local partition core_dir embedded_config HI magic core_img_found=0 embedded_config_found=0;
   local total_module_size kernel_image_size compressed_size offset_lzma lzma_uncompressed_size;
@@ -1758,8 +1761,8 @@ grub2_info () {
     if [ ${hdd} = ${HDName[${HI}]} ] ; then
        if [ ${sector_nr} -lt ${HDSize[HI]} ] ; then
 
-	  if [ ${sector_nr} -eq 1 ] ; then
-	     # Use "file/partition/drive" passed to grub2_info directly.
+	  if [ "${core_source}" = 'file' ] ; then
+	     # Use "file" passed to grub2_info directly.
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
 	     # Use "hdd" passed to grub2_info.
@@ -2245,13 +2248,13 @@ Get_Partition_Info() {
 
 	## If Grub or Grub 2 is in the boot sector, investigate the embedded information. ##
 	48b4) BST='Grub2 (v1.96)';
-	      grub2_info ${part} ${drive} '1.96';
+	      grub2_info ${part} ${drive} '1.96' 'partition';
 	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	7c3c) BST='Grub2 (v1.97-1.98)';
-	      grub2_info ${part} ${drive} '1.97-1.98';
+	      grub2_info ${part} ${drive} '1.97-1.98' 'partition';
 	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	0020) BST='Grub2 (v1.99-2.00)';
-	      grub2_info ${part} ${drive} '1.99-2.00';
+	      grub2_info ${part} ${drive} '1.99-2.00' 'partition';
 	      BSI="${BSI} Grub2 (v${grub2_version}) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
  aa75 | 5272) BST='Grub Legacy';
 	      stage2_loc ${part};
@@ -2584,9 +2587,9 @@ Get_Partition_Info() {
 		     case "${sig2}" in
 		       eb48) stage2_loc "${mountname}${file}${loader}";
 			     BFI="${BFI} Grub Legacy (v${Grub_Version}) in the file ${file}${loader} ${Stage2_Msg}";;
-		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96;
+		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96 'file';
 			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Grub2_Msg}.";;
-		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99;
+		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99 'file';
 			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Grub2_Msg}.";;
 		     esac
 		  fi
@@ -2595,7 +2598,7 @@ Get_Partition_Info() {
 		  sig=$(hexdump -v -s 392 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
-		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97-1.98;
+		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97-1.98 'file';
 		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Grub2_Msg}."; 
 		  fi
 
@@ -2603,7 +2606,7 @@ Get_Partition_Info() {
 		  sig=$(hexdump -v -s 384 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
-		     grub2_info "${mountname}${file}${loader}" ${drive} 2.00;
+		     grub2_info "${mountname}${file}${loader}" ${drive} 2.00 'file';
 		     BFI="${BFI} Grub2 (v2.00) in the file ${file}${loader} ${Grub2_Msg}."; 
 		  fi
 	       fi
@@ -2862,7 +2865,7 @@ for HI in ${!HDName[@]} ; do
     eb4c) ## Grub2 (v1.96) is in the MBR. ##
 	  BL='Grub2 (v1.96)';
 
-	  grub2_info ${drive} ${drive} '1.96';
+	  grub2_info ${drive} ${drive} '1.96' 'drive';
 
 	  Message="${Message} and ${Grub2_Msg}";;
 
@@ -2872,7 +2875,7 @@ for HI in ${!HDName[@]} ; do
 		0020) grub2_version='1.99-2.00'; BL='Grub2 (v1.99-2.00)';;
 	  esac
 
-	  grub2_info ${drive} ${drive} ${grub2_version};
+	  grub2_info ${drive} ${drive} ${grub2_version} 'drive';
 
 	  # Set a more exact version number (1.99 or 2.00), if '1.99-2.00' was
 	  # passed to the grub2_info function.
