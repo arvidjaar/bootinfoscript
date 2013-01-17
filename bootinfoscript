@@ -1897,7 +1897,7 @@ grub2_info () {
 		      # Grub2 pads the start of the lzma stream to a 16 bytes boundary.
 		      # Correct the offset to the lzma stream if necessary (are the padded bytes zeros?).
 		      padsize=$(( (((${offset_lzma} + 15) >> 4) << 4) - ${offset_lzma} )); 
-		      if ( [ ${padsize} -gt 0 ] && [ -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 \"%02x\"'  ${core_img_file} | tr -d 0)" ] ) ; then 
+		      if ( [ ${padsize} -gt 0 ] && [ -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 "%02x"'  ${core_img_file} | tr -d 0)" ] ) ; then 
 			 offset_lzma=$(( ${offset_lzma} + ${padsize} )); 
 		      fi
 
