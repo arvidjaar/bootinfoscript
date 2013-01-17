@@ -1766,11 +1766,11 @@ grub2_info () {
 	     # Use "file" passed to grub2_info directly.
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
-	     # Assemble blocklists from "hdd" passed to grub2_info.
+	     # Assemble fragments from "hdd" passed to grub2_info.
 	     # Each block list entry is 12 bytes long and consists of
-	     #   8 bytes = fragment sector absolute disk offset
-	     #   2 bytes = fragment size
-	     #   2 bytes = fragment menory segment to load into
+	     #   8 bytes = fragment start absolute disk offset in sectors
+	     #   2 bytes = fragment size in sectors
+	     #   2 bytes = memory segment to load fragment into
 	     # Entries start at the end of the first sector of core.img and
 	     # go down. End marker is all zeroes.
 	     while [ ${sector_nr} -gt 0 ] ; do
