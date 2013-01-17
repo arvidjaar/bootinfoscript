@@ -1733,6 +1733,7 @@ grub2_info () {
   local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
+  local fragment_size=1 fragment_offset=0 block_list=500;
 
 
   case "${grub2_version}" in
@@ -1765,8 +1766,25 @@ grub2_info () {
 	     # Use "file" passed to grub2_info directly.
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
-	     # Use "hdd" passed to grub2_info.
-	     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
+	     # Assemble blocklists from "hdd" passed to grub2_info.
+	     # Each block list entry is 12 bytes long and consists of
+	     #   8 bytes = fragment sector absolute disk offset
+	     #   2 bytes = fragment size
+	     #   2 bytes = fragment menory segment to load into
+	     # Entries start at the end of the first sector of core.img and
+	     # go down. End marker is all zeroes.
+	     while [ ${sector_nr} -gt 0 ] ; do
+		if [ ${block_list} -lt 12 ] ; then
+		   # No end marker found. Something is wrong here; zap it
+		   dd if=/dev/zero of=${core_img_file} count=1 2>> ${Trash};
+		   break;
+		fi
+		dd if="${hdd}" of=${core_img_file} skip=${sector_nr} seek=${fragment_offset} count=${fragment_size} 2>> ${Trash};
+		let "fragment_offset += fragment_size";
+		sector_nr=$(hexdump -v -n 8 -s ${block_list} -e '1/8 "%u"' ${core_img_file});
+		fragment_size=$(hexdump -v -n 2 -s $((block_list+8)) -e '1/2 "%u"' ${core_img_file});
+		let "block_list -= 12";
+	     done
 	  fi
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
