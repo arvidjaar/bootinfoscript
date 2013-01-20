@@ -1,10 +1,25 @@
 From: Andrey Borzenkov <arvidjaar@gmail.com>
 Subject: [PATCH] fix printing of $prefix and embedded config in grub 2.00
+To: Gert Hulselmans <hulselmansgert@gmail.com>
 
 Several related changes in grub2_info:
 
 - bug fix: $partition was computed for versions < 2.00 only. Do not
   print bogus partition number if it is not defined.
+
+Before:
+
+    Boot sector info:  Grub2 (v2.00) is installed in the boot sector of sda3 
+                       and looks at sector 11689848 of the same hard drive 
+                       for core.img. core.img is at this location and looks 
+                       in partition 1 for (,msdos3)/grub2.
+
+After:
+
+    Boot sector info:  Grub2 (v2.00) is installed in the boot sector of sda3 
+                       and looks at sector 11689848 of the same hard drive 
+                       for core.img. core.img is at this location and looks 
+                       for (,msdos3)/grub2.
 
 - enhancement: grub-install can create valid core.img that has both
   $prefix and embedded config. And it is always possible to define
@@ -12,12 +27,38 @@ Several related changes in grub2_info:
   it provides important information to interpret embedded config and
   should be shown always if available.
 
+Before:
+
+    Boot sector info:  Grub2 (v2.00) is installed in the boot sector of sda1 
+                       and looks at sector 2049 of the same hard drive for 
+                       core.img. core.img is at this location and uses an 
+                       embedded config file:
+                       
+                       -------------------------------------------------------
+                       search.fs_uuid 41397e83-8273-439b-99d1-e33f67d66aa9 
+                       root hd1,msdos2  
+                       set prefix=($root)/boot/grub2
+                       -------------------------------------------------------
+
+After:
+
+    Boot sector info:  Grub2 (v2.00) is installed in the boot sector of sda1 
+                       and looks at sector 2049 of the same hard drive for 
+                       core.img. core.img is at this location and looks for 
+                       /boot/grub2 and uses an embedded config file:
+                       
+                       -------------------------------------------------------
+                       search.fs_uuid 41397e83-8273-439b-99d1-e33f67d66aa9 
+                       root hd1,msdos2  
+                       set prefix=($root)/boot/grub2
+                       -------------------------------------------------------
+
 - enhancement: check that $prefix is defined. It is optional in case
   of grub 2.00.
 
 In grub 2.00 just print raw value of $prefix. If drive (and partition)
 is omitted, grub is using platform specific functions to fill them in.
 Instead of trying to guess, just let user to collect correct information
-which can then help to abalyze boot configuration.
+which can then help to analyze boot configuration.
 
 Signed-off-by: Andrey Borzenkov <arvidjaar@gmail.com>
