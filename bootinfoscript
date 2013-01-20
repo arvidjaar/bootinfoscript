@@ -1715,6 +1715,41 @@ stage2_loc () {
 
 
 
+
+## Grub2 ##
+#
+#   Collect fragments of core.img using information encoded in the first
+#   block (diskboot.img).
+#
+
+grub2_read_blocklist () {
+  local hdd="$1";
+  local core_img_file="$2";
+
+  local sector_nr fragment_size fragment_offset=1 block_list=500;
+
+  # Assemble fragments from "hdd" passed to grub2_info.
+  # Each block list entry is 12 bytes long and consists of
+  #   8 bytes = fragment start absolute disk offset in sectors
+  #   2 bytes = fragment size in sectors
+  #   2 bytes = memory segment to load fragment into
+  # Entries start at the end of the first sector of core.img and
+  # go down. End marker is all zeroes.
+  
+  while [ ${block_list} -gt 12 ] ; do
+     sector_nr=$(hexdump -v -n 8 -s ${block_list} -e '1/8 "%u"' ${core_img_file});
+     if [ ${sector_nr} -eq 0 ] ; then
+	return;
+     fi
+
+     fragment_size=$(hexdump -v -n 2 -s $((block_list+8)) -e '1/2 "%u"' ${core_img_file});
+
+     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} seek=${fragment_offset} count=${fragment_size} 2>> ${Trash} || return;
+     let "fragment_offset += fragment_size";
+     let "block_list -= 12";
+  done
+}
+
 ## Grub2 ##
 #
 #   Determine the (embeded) location of core.img for a Grub2 boot.img file,
@@ -1737,7 +1772,6 @@ grub2_info () {
   local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
-  local fragment_size=1 fragment_offset=0 block_list=500;
 
 
   case "${grub2_version}" in
@@ -1770,25 +1804,8 @@ grub2_info () {
 	     # Use "file" passed to grub2_info directly.
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
-	     # Assemble fragments from "hdd" passed to grub2_info.
-	     # Each block list entry is 12 bytes long and consists of
-	     #   8 bytes = fragment start absolute disk offset in sectors
-	     #   2 bytes = fragment size in sectors
-	     #   2 bytes = memory segment to load fragment into
-	     # Entries start at the end of the first sector of core.img and
-	     # go down. End marker is all zeroes.
-	     while [ ${sector_nr} -gt 0 ] ; do
-		if [ ${block_list} -lt 12 ] ; then
-		   # No end marker found. Something is wrong here; zap it
-		   dd if=/dev/zero of=${core_img_file} count=1 2>> ${Trash};
-		   break;
-		fi
-		dd if="${hdd}" of=${core_img_file} skip=${sector_nr} seek=${fragment_offset} count=${fragment_size} 2>> ${Trash};
-		let "fragment_offset += fragment_size";
-		sector_nr=$(hexdump -v -n 8 -s ${block_list} -e '1/8 "%u"' ${core_img_file});
-		fragment_size=$(hexdump -v -n 2 -s $((block_list+8)) -e '1/2 "%u"' ${core_img_file});
-		let "block_list -= 12";
-	     done
+	     # Use "hdd" passed to grub2_info.
+	     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  fi
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
@@ -1900,6 +1917,12 @@ grub2_info () {
 		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "xz" or "lzma".' >&2;
 		fi
 	     elif [ "${grub2_version}" = '2.00' ] ; then
+
+		# First make sure to collect core.img fragments if it is
+		# embedded.
+		if [ "${core_source}" = 'disk' ] || [ "${core_source}" = 'partition' ] ; then
+		   grub2_read_blocklist "${hdd}" ${core_img_file};
+		fi
 
 		# For Grub2 (v2.00), the core_dir is stored in the compressed part of core.img in the same
 		# way as the modules and embedded config file.
