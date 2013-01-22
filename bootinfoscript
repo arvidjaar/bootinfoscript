@@ -2472,6 +2472,8 @@ Get_Partition_Info() {
 
 	[ -s "${mountname}/etc/slackware-version" ] && OS=$(sed -e 's/\\. //g' -e 's/\\.//g' -e 's/^[ \t]*//' "${mountname}"/etc/slackware-version);
 
+	[ -s "${mountname}/etc/redhat-release" ] && OS=$(cat "${mountname}"/etc/redhat-release | tr -d '\n');
+
 
 
 	## Search for the files in ${Bootfiles} ##
@@ -2680,7 +2682,8 @@ Get_Partition_Info() {
 	   printf "${BFI}\n" | fold -s -w 55 | sed -e '/^-------------------------$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
 	fi
 
-	echo "    Operating System:  "${OS} | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}"
+	printf "    Operating System:  " >> "${Log}";
+	echo "${OS}" | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}";
 	printf "    Boot files:        " >> "${Log}";
 	echo ${BootFiles} | fold -s -w 55 | sed -e '2~1s/.*/                       &/' >> "${Log}";
 
