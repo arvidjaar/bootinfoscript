@@ -2022,20 +2022,23 @@ grub2_info () {
 	Grub2_Msg="${Grub2_Msg}. Grub2 is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
      fi
 
-     Grub2_Msg="${Grub2_Msg}. core.img is at this location"
+     Grub2_Msg="${Grub2_Msg}. core.img is at this location";
 
-     partition=$(( ${partition} + 1 ));
+     # In GRUB 2.00 core.img prefix is optional
+     if [ -n "${core_dir}" ]; then
+	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir}";
 
-     if [ ${embedded_config_found} -eq 0 ] ; then
-	# No embedded config file found.
-
-	if [ ${partition} -eq 255 ] ; then
-	   Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
-	else
-	   Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
+	if [ -n "${partition}" ]; then
+	   partition=$(( ${partition} + 1 ));
+	   if [ ${partition} -eq 255 ] ; then
+	      Grub2_Msg="${Grub2_Msg} on this drive";
+	   else
+	      Grub2_Msg="${Grub2_Msg} in partition ${partition}";
+	   fi
 	fi
+     fi
 
-     else
+     if [ ${embedded_config_found} -eq 1 ] ; then
 	# Embedded config file found.
 
 	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}\n--------------------------------------------------------------------------------\n");
