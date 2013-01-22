@@ -2176,7 +2176,7 @@ Get_Partition_Info() {
   # Get bytes 0x80-0x83 of the Volume Boot Record (VBR).
   Bytes80_to_83=$(hexdump -v -n 4 -s $((0x80)) -e '4/1 "%02x"' ${part});
 
-  # Get bytes 0x80-0x81 of VBR to identify Boot sectors.
+  # Get bytes 0x80-0x81 of the Volume Boot Record (VBR).
   Bytes80_to_81="${Bytes80_to_83:0:4}";
 
 
@@ -2189,11 +2189,10 @@ Get_Partition_Info() {
 	0689) BST='Syslinux 3.00-3.52';
 	      syslinux_info ${part};
 	      BSI="${BSI} ${Syslinux_Msg}";;
-	7405) BST='Windows 7: FAT32';;
 	0734) BST='Dos_1.0';;
 	0745) BST='Windows Vista: FAT32';;
 	089e) BST='MSDOS5.0: FAT16';;
-	08cd) BST='Windows XP: NTFS';;
+	08cd) BST='Windows 2000/XP: NTFS';;
 	0b60) BST='Dell Utility: FAT16';; 
 	0bd0) BST='MSWIN4.1: FAT32';;
 	0e00) BST='Dell Utility: FAT16';;
@@ -2210,7 +2209,13 @@ Get_Partition_Info() {
 	4445) BST='Dell Restore: FAT32';;
 	55aa) case ${Bytes80_to_83} in
 		55aa750a) BST='Grub4Dos: FAT32';;
-		55aa*   ) BST='Windows Vista/7: NTFS';;	# 55aa7506 = Windows Vista
+		55aa7506) # Get bytes 0x110-0x111 of the Volume Boot Record (VBR).
+			  Bytes110_to_111=$(hexdump -v -n 2 -s $((0x110)) -e '2/1 "%02x"' ${part});
+			  case "${Bytes110_to_111}" in
+			    9090) BST='Windows Vista: NTFS';;
+			    2810) BST='Windows 7/2008: NTFS';;
+			    0a13) BST='Windows 8/2012: NTFS';;
+			  esac;;
 	      esac;;
 	55cd) BST='FAT32';;
 	5626) BST='Grub4Dos: EXT2/3/4';;
@@ -2220,7 +2225,8 @@ Get_Partition_Info() {
 	6974) BST='BootIt: FAT16';;
 	6f65) BST='BootIt: FAT16';;
 	6f6e) BST='-';;		# 'MSWIN4.1: Fat 32'
-	6f74) BST='FAT32';; 
+	6f74) BST='FAT32';;
+	7405) BST='Windows 7: FAT32';;
 	7815) case ${Bytes80_to_83} in
 		7815b106) BST='Syslinux 3.53-3.86';
 			  syslinux_info ${part};
@@ -2243,6 +2249,7 @@ Get_Partition_Info() {
 	e2f7) BST='FAT32, Non Bootable';;
 	e879) BST='ISOhybrid (Syslinux 3.74-3.80)';;
 	e9d8) BST='Windows Vista/7: NTFS';;
+	f6c1) BST='Windows 8/2012: FAT32';;
 	f6f6) BST='- (cleared BS by FDISK)';;
 	fa33) BST='Windows XP: NTFS';;
 	fbc0) BST='ISOhybrid (Syslinux 3.81)';;
@@ -2893,7 +2900,16 @@ for HI in ${!HDName[@]} ; do
 	  esac;;
     33c0) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig3} in
-	    33c08e) BL='Windows';;
+	    33c08e) BL='Windows';
+		    case ${MBR_sig8} in
+		      33c08ed0bc007cfb) BL='Windows 2000/XP/2003';;
+		      33c08ed0bc007c8e)
+					# Look at byte 0xF0-F1: different offset for "TCPA" string.
+					case "${MBR_512:480:4}" in
+					  fb54) BL='Windows Vista';;
+					  4350) BL='Windows 7/8/2012';;
+					esac;;
+		    esac;;
 	    33c090) BL='DiskCryptor';;
 	    33c0fa) BL='Syslinux MBR (4.04 and higher)';;			
 	  esac;;
