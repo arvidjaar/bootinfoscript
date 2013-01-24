@@ -2229,13 +2229,13 @@ Get_Partition_Info() {
 	55cd) BST='FAT32';;
 	5626) BST='Grub4Dos: EXT2/3/4';;
 	638b) BST='Freedos: FAT32';;
-	6616) BST='FAT16';;
+	6616) BST='Windows 7/2008: FAT16';;
 	696e) BST='FAT16';;
 	6974) BST='BootIt: FAT16';;
 	6f65) BST='BootIt: FAT16';;
 	6f6e) BST='-';;		# 'MSWIN4.1: Fat 32'
 	6f74) BST='FAT32';;
-	7405) BST='Windows 7: FAT32';;
+	7405) BST='Windows 7/2008: FAT32';;
 	7815) case ${Bytes80_to_83} in
 		7815b106) BST='Syslinux 3.53-3.86';
 			  syslinux_info ${part};
