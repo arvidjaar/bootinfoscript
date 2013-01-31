@@ -3271,6 +3271,14 @@ echo >> "${Log}";
 
 
 
+if [ $(ls -l /dev/disk/by-id 2>> ${Trash} | wc -l) -gt 1 ] ; then
+   printf '========================= "ls -l /dev/disk/by-id" output: ======================\n\n' >> "${Log}";
+   ls -l /dev/disk/by-id >> "${Log}";
+   echo >> "${Log}";
+fi
+         
+
+
 if [ $(ls -R /dev/mapper 2>> ${Trash} | wc -l) -gt 2 ] ; then
    printf '========================= "ls -R /dev/mapper/" output: =========================\n\n' >> "${Log}";
    ls -R /dev/mapper >> "${Log}";
