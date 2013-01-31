@@ -3153,15 +3153,20 @@ fi
 #
 #   Only works if the "LVM2"-package is installed.
 
-if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
+if [ $(type lvs >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
 
-  LVM_Partitions=$(lvscan | ${AWK} '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
-
-  for LVM in ${LVM_Partitions}; do 
-    LVM_Size=$(lvdisplay -c ${LVM} | ${AWK} -F ':' '{ print $7 }');
-    LVM_Status=$(lvdisplay ${LVM} | ${AWK} '$0 ~ "LV Status" { print $3 }');
+  lvs --nameprefixes --noheadings --options lv_name,vg_name,lv_size,lv_attr --units s | \
+  while read line ; do 
+    LVM2_VG_NAME= LVM2_LV_NAME= LVM2_LV_SIZE= LVM2_LV_ATTR=
+    eval "${line}";
+    if [ -z "${LVM2_VG_NAME}" ] || [ -z "${LVM2_LV_NAME}" ] || [ -z "${LVM2_LV_SIZE}" ] || [ -z "${LVM2_LV_ATTR}" ] ; then
+       continue
+    fi
+    name="${LVM2_VG_NAME}-${LVM2_LV_NAME}";
+    LVM="/dev/mapper/${name}";
+    LVM_Size=${LVM2_LV_SIZE:0:-1};
+    LVM_Status=${LVM2_LV_ATTR:4:1};
     lvchange -ay ${LVM};
-    name=${LVM:12};
     mountname="LVM/${name}";
     kind='LVM';
     start=0;
@@ -3172,7 +3177,7 @@ if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 
     Get_Partition_Info "${Log}" "${Log1}" "$LVM" "${name}" "${mountname}" "${kind}" "${start}" "${end}" "${system}" "${PI}";
       
     # deactivate all LVM's, which were not active.
-    [[ "${LVM_Status}" = 'NOT' ]] && lvchange -an "${LVM}";
+    [[ "${LVM_Status}" != 'a' ]] && lvchange -an "${LVM}";
 
   done
 fi
