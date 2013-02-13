@@ -603,6 +603,7 @@ Unknown_MBR=${Folder}/Unknown_MBR		# File to record all unknown MBR and Boot sec
 Tmp_Log=${Folder}/Tmp_Log			# File to temporarily hold some information.
 core_img_file=${Folder}/core_img		# File to temporarily store an embedded core.img of grub2.
 core_img_file_unlzma=${Folder}/core_img_unlzma	# File to temporarily store the uncompressed part of core.img of grub2.
+core_img_file_type_2=${Folder}/core_img_type_2	# File to temporarily store the core.img module of type 2
 PartitionTable=${Folder}/PT			# File to store the Partition Table.
 FakeHardDrives=${Folder}/FakeHD			# File to list devices which seem to have  no corresponding drive.
 BLKID=${Folder}/BLKID				# File to store the output of blkid.
@@ -1781,7 +1782,9 @@ grub2_info () {
   local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
+  local core_img_flavour='detect';
 
+  > ${core_img_file_type_2}
 
   case "${grub2_version}" in
     1.96) sector_offset='68';  drive_offset='76'; directory_offset='553';;
@@ -1981,26 +1984,98 @@ grub2_info () {
 			 grub_module_header_offset=$(( ${grub_module_info_offset} + ${grub_modules_offset} ));
 
 			 # Traverse through the list of modules and check if it is a config module.
+			 # Upstream GRUB2 supports following module types:
+			 #   0 - ELF modules; may be included multiple times
+			 #   1 - memory disk image; should be included just once
+			 #   2 - embedded initial configuration code; should be included just once
+			 #   3 - initial value of ${prefix} variable. Device part may be omitted,
+			 #       in which case device is guessed at startup
+			 #   4 - public GPG keyring used for file signature checking;
+			 #       may be included multiple times
+			 #
+			 # All parts are optional (although in practice
+			 # at least drivers for disk and filesystem must be
+			 # present).
+			 #
+			 # Since RPM version 2.00-10 fedora includes patch that
+			 # inserts additional module type after the first one,
+			 # thus shifting all numbers starting with 1. So
+			 # embedded config and prefix become 3 and 4 on fedora.
 			 while [ ${grub_module_header_offset} -lt ${grub_modules_end_offset} ] ; do
 
 			   eval $( hexdump -v -n 8 -s ${grub_module_header_offset} -e '1/4 "grub_module_type=%u; " 1/4 "grub_module_size=%u;"' ${core_img_file_unlzma} );
 
-			   if [ ${grub_module_type} -eq 2 ] ; then
-			      # This module is an embedded config file.
-			      embedded_config_found=1;
+			   if [ ${grub_module_type} -eq 1 ] ; then
+			      # "stale" ELF module on fedora or memory disk everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 if [ "$(hexdump -v -n 4 -s $((grub_module_header_offset+8)) -e '"%c"' ${core_img_file_unlzma})" = $'\x7f''ELF' ] ; then
+				    # fedora "stale" ELF module
+				    core_img_flavour='fedora';
+				 else
+				    core_img_flavour='upstream';
+				 fi
+			      fi
 
-			      embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} );
-			      # Remove "\0" at the end.
-			      embedded_config=$( printf "${embedded_config%\\0}" );
+			   elif [ ${grub_module_type} -eq 2 ] ; then
+			      # memory disk on fedora or embedded config everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+			         # Normally core.img will have prefix which is easier to detect,
+			         # so leave detection as last resort.
+			         dd if=${core_img_file_unlzma} of=${core_img_file_type_2} bs=1 skip=$((grub_module_header_offset+8)) count=$((grub_module_size-8)) 2>> ${Trash};
+			      fi
+			      if [ ${core_img_flavour} = 'upstream' ] ; then
+				 # This module is an embedded config file.
+				 embedded_config_found=1;
+
+				 # Remove padding "\0"'s at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      fi
 
 			   elif [ ${grub_module_type} -eq 3 ] ; then
-			      # This module contains the prefix.
+			      # embedded config on fedora or prefix everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 # if it looks like file name, assume prefix
+				 if [[ "$(hexdump -v -n 1 -s $(( grub_module_header_offset + 8 )) -e '"%c"' ${core_img_file_unlzma})" == [/\(] ]] ; then
+				    core_img_flavour='upstream';
+				 else
+				    core_img_flavour='fedora';
+				 fi
+			      fi
+			      if [ ${core_img_flavour} = 'upstream' ] ; then
+				 # This module contains the prefix.
 
-			      # Get core dir.
-			      core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} );
-			      # Remove "\0" at the end.
-			      core_dir=$( printf "${core_dir%\\0}" );
+				 # Get core dir.
+				 # Remove padding "\0"'s at the end.
+				 core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      elif [ ${core_img_flavour} = 'fedora' ] ; then
+				 # This module is an embedded config file.
+				 embedded_config_found=1;
 
+				 # Remove padding "\0"'s at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      fi
+
+			   elif [ ${grub_module_type} -eq 4 ] ; then
+			      # prefix on fedora or GPG keyring everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 # if it looks like file name, assume prefix
+			         # GPG ring normall has \x99 as first byte
+				 if [[ "$(hexdump -v -n 1 -s $(( grub_module_header_offset + 8 )) -e '"%c"' ${core_img_file_unlzma})" == [/\(] ]] ; then
+				    core_img_flavour='fedora';
+				 else
+				    core_img_flavour='upstream';
+				 fi
+			      fi
+			      if [ ${core_img_flavour} = 'fedora' ] ; then
+				 # This module contains the prefix.
+
+				 # Get core dir.
+				 # Remove padding "\0"'s at the end.
+				 core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      elif [ ${core_img_flavour} = 'upstream' ] ; then
+				 # TODO list GPG keyring
+				 :
+			      fi
 			   fi
 
 			   grub_module_header_offset=$(( ${grub_module_header_offset} + ${grub_module_size} ));
@@ -2019,6 +2094,27 @@ grub2_info () {
        fi
     fi
   done
+
+  if [ "${grub2_version}" = '2.00' ] ; then
+     if [ -s ${core_img_file_type_2} ] ; then
+	if [ "${core_img_flavour}" = 'detect' ] ; then
+	   # Neither type 1, 3 or 4 modules were present. So we have either
+	   # embedded config or memory disk. 
+	   if type file > /dev/null 2>&1 ; then
+	      if [[ "$(LC_ALL=C file ${core_img_file_type_2})" == *"ASCII text"* ]] ; then
+		 # upstream embedded config
+		 core_img_flavour='upstream';
+	      fi
+	   fi
+	fi
+	if [ ${core_img_flavour} = 'upstream' ] ; then
+	   embedded_config_found=1;
+
+	   # Remove padding "\0"'s at the end.
+	   embedded_config=$( hexdump -v -e '"%_c"' ${core_img_file_type_2} | sed -e 's/\(\\0\)\+$//' );
+	fi
+     fi
+  fi
 
 
   if [ ${core_img_found} -eq 0 ] ; then
