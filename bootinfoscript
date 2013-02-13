@@ -3132,7 +3132,7 @@ for HI in ${!HDName[@]} ; do
   ## Output message at beginning of summary that gives MBR info for each drive: ##
 
   printf ' => ' >> "${Log}";
-  printf "${BL} ${Message}.\n" | fold -s -w 75 | sed -e '/^-----$/ d' -e '2~1s/.*/    &/' >> "${Log}";
+  printf "${BL} ${Message}.\n" | fold -s -w 75 | sed -e '/^-----\.\?$/ d' -e '2~1s/.*/    &/' >> "${Log}";
 
   HDMBR[${HI}]=${BL};
 done
