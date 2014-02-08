@@ -1829,15 +1829,24 @@ grub2_info () {
 	     if ( [ "${grub2_version}" = '1.99' ] || [ "${grub2_version}" = '1.99-2.00' ] || [ "${grub2_version}" = '2.00' ] ) ; then
 		# Find the last 8 bytes of lzma_decode to find the offset of the lzma_stream:
 		#   - v1.99: "d1 e9 df fe ff ff 00 00"
-		#   - v2.00: "d1 e9 df fe ff ff 66 90"
-		#            "d1 e9 df fe ff ff 8d b6" (openSUSE 12.2)
+		#   - v2.00: "d1 e9 df fe ff ff 66 90" (pad bytes NOP)
+		#            "d1 e9 df fe ff ff 8d"    (pad bytes LEA ...)
+		#
+		# arvidjaar@gmail.com:
+		#   final directive in startup_raw.S is .p2align 4 which
+		#   (at least using current GCC/GAS) adds lea instructions
+		#   (8d...). Exact format and length apparently depend on pad
+		#   size and may be on toolkit version. So just accept anything
+		#   starting with lea.
+		#
+		# FIXME what if it ends on exact 16 byte boundary?
 
 		eval $(hexdump -v -n 10000 -e '1/1 "%02x"' ${core_img_file} | \
 		     ${AWK} '{ found_at=match($0, "d1e9dffeffff" ); if (found_at == "0") { print "offset_lzma=0" } \
 			    else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 "; lzma_decode_last8bytes=" substr($0,found_at,16) ";" } }');
 
 		if [ "${grub2_version}" = '1.99-2.00' ] ; then
-		   if ( [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" ] || [ "${lzma_decode_last8bytes}" = "d1e9dffeffff8db6" ] ) ; then
+		   if ( [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" ] || [ "${lzma_decode_last8bytes:0:14}" = "d1e9dffeffff8d" ] ) ; then
 		      grub2_version='2.00';
 		   else
 		      grub2_version='1.99';
@@ -1955,9 +1964,10 @@ grub2_info () {
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
 		      # Grub2 pads the start of the lzma stream to a 16 bytes boundary.
-		      # Correct the offset to the lzma stream if necessary (are the padded bytes zeros?).
+		      # Correct the offset to the lzma stream if necessary
+		      # Current GCC adds lea instructions as pad bytes
 		      padsize=$(( (((${offset_lzma} + 15) >> 4) << 4) - ${offset_lzma} )); 
-		      if ( [ ${padsize} -gt 0 ] && [ -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 "%02x"'  ${core_img_file} | tr -d 0)" ] ) ; then 
+		      if ( [ ${padsize} -gt 0 ] ) ; then 
 			 offset_lzma=$(( ${offset_lzma} + ${padsize} )); 
 		      fi
 
