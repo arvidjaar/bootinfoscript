@@ -628,7 +628,7 @@ All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-
 if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
   InActiveDMRaid=$(dmraid -si -c);
 
-  if [ x"${InActiveDMRaid}" = x"no raid disks" ] ; then 
+  if [ x"${InActiveDMRaid}" = x"no raid disks" ] || [ x"${InActiveDMRaid}" = x"no block devices found" ] ; then 
      InActiveDMRaid='';
   fi
 
@@ -636,8 +636,9 @@ if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
      dmraid -ay ${InActiveDMRaid} >> ${Trash};
   fi
 
-  if [ x"$(dmraid -sa -c)" != x"no raid disks" ] ; then
-     All_DMRaid=$(dmraid -sa -c | ${AWK} '{ print "/dev/mapper/"$0 }');
+  All_DMRaid=$(dmraid -sa -c);
+  if [ x"${All_DMRaid}" != x"no raid disks" ] && [ x"${All_DMRaid}" != x"no block devices found" ] ; then
+     All_DMRaid=$(echo "{All_DMRaid}" | ${AWK} '{ print "/dev/mapper/"$0 }');
      All_Hard_Drives="${All_Hard_Drives} ${All_DMRaid}";
   fi  
 fi
