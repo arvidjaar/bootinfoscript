@@ -7,6 +7,7 @@ LAST_GIT_COMMIT_DATE='';
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
 # Copyright (c) 2011-2012      Gert Hulselmans                                 #
+# Copyright (c) 2013-2014      Andrei Borzenkov
 #                                                                              #
 # Permission is hereby granted, free of charge, to any person obtaining a copy #
 # of this software and associated documentation files (the "Software"), to     #
@@ -28,8 +29,9 @@ LAST_GIT_COMMIT_DATE='';
 #                                                                              #
 ################################################################################
 #                                                                              #
-# Current developer:  Gert Hulselmans                                          #
+# Current developer:  Andrei Borzenkov
 #                                                                              #
+# Past developer:     Gert Hulselmans                                          #
 # Past developer:     Ulrich Meierfrankenfeld (meierfra) (ubuntuforums.org)    #
 # Past contributor:   caljohnsmith (ubuntuforums.org)                          #
 #                                                                              #
