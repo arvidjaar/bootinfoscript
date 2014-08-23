@@ -135,9 +135,9 @@ help () {
 #   "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
 update () {
-  local git_bis_start_url='http://sourceforge.net/p/bootinfoscript/code/ci';
-  local git_bis_end_url='tree/bootinfoscript?format=raw';
-  local git_commit_url='http://bootinfoscript.sourceforge.net/bis-last-commit.txt'
+  local git_ref_url='https://api.github.com/repos/arvidjaar/bootinfoscript/git/refs/heads/master'
+  local git_commit_url='https://api.github.com/repos/arvidjaar/bootinfoscript/git/commits'
+  local git_contents_url='https://github.com/arvidjaar/bootinfoscript/raw/master/bootinfoscript'
 
   # Check if date is available.
   if [ $(type date > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
@@ -157,24 +157,24 @@ update () {
   # Check if wget or curl is available
   if [ $(type wget > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf '\nDownloading last development version of Boot Info Script from git:\n\n';
-     LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}" 2> /dev/null);
-     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
+     LAST_GIT_COMMIT_ID=$(wget -O - "${git_ref_url}" | sed -ne 's/^.*"sha": "\(.*\)".*$/\1/p');
+     LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}/$LAST_GIT_COMMIT_ID");
 
-     wget -O "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
+     wget -O "${GIT_BIS_FILENAME}" "${git_contents_url}";
   elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf 'Downloading last development version of Boot Info Script from git:\n\n';
-     LAST_GIT_COMMIT=$(curl "${git_commit_url}");
-     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
+     LAST_GIT_COMMIT_ID=$(curl "${git_ref_url}" | sed -ne 's/^.*"sha": "\(.*\)".*$/\1/p');
+     LAST_GIT_COMMIT=$(curl "${git_commit_url}/$LAST_GIT_COMMIT_ID");
 
-     curl -o "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
+     curl -o "${GIT_BIS_FILENAME}" "${git_contents_url}";
   else
      printf '"wget" or "curl" could not be found.\nInstall at least one of them and try again.\n' >&2;
      exit 1;
   fi
+
+  # First date is Author, second date is Commit
+  LAST_GIT_COMMIT_DATE=$(echo "${LAST_GIT_COMMIT}" | sed -ne 's/^[[:space:]]*"date": "\(.*\)"[[:space:]]*$/\1/p' | tail -1);
+  LAST_GIT_COMMIT_SHORTLOG=$(echo "${LAST_GIT_COMMIT}" | sed -n -e '/^[[:space:]]*"message":/ { s/^[[:space:]]*"message": "\(.*\)",[[:space:]]*$/\1/ ; s/\\n.*$// ; p }');
 
   # Set the retrieval date in just downloaded script.
   sed -i -e "4,0 s@LAST_GIT_COMMIT_SHORTLOG='';@LAST_GIT_COMMIT_SHORTLOG='${LAST_GIT_COMMIT_SHORTLOG}';@" \
