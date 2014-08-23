@@ -620,7 +620,7 @@ exec 2> ${Error_Log};
 #
 #   Support more than 26 drives.
 
-All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] 2>> ${Trash});
+All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] 2>> ${Trash});
 
 
 ## Add found RAID disks to list of hard drives. ##
