@@ -1825,7 +1825,8 @@ grub2_info () {
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
 
-	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] ) ; then
+	  # 52bff481 - RHEL7 diskboot.S with patched out message
+	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] || [ "${magic}" = '52bff481' ] ) ; then
 	     # core.img file was found.
 	     core_img_found=1;
 
