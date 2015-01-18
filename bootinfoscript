@@ -1681,7 +1681,7 @@ stage2_loc () {
   for HI in ${!HDName[@]}; do
     hdd=${HDName[${HI}]};
 
-    if [ ${offset} -lt  ${HDSize[HI]} ] ; then
+    if [ ${offset} -lt  ${HDSize[$HI]} ] ; then
        tmp=$(dd if=${hdd} skip=${offset} count=1 2>> ${Trash} | hexdump -v -n 4 -e '"%x"');
 
        if [[ "${tmp}" = '3be5652' || "${tmp}" = 'bf5e5652' ]] ; then
@@ -1813,7 +1813,7 @@ grub2_info () {
     # total number of sectors of that drive.
 
     if [ ${hdd} = ${HDName[${HI}]} ] ; then
-       if [ ${sector_nr} -lt ${HDSize[HI]} ] ; then
+       if [ ${sector_nr} -lt ${HDSize[$HI]} ] ; then
 
 	  if [ "${core_source}" = 'file' ] ; then
 	     # Use "file" passed to grub2_info directly.
