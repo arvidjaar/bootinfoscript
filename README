@@ -75,6 +75,7 @@ Features:
                         checksum matches, display installation directory,
                         display offset of the ldlinux.sys file.
         ° For NTFS and FAT: examine the Boot Parameter Block for errors.
+    - parse GRUB2 core.img and display embedded prefix and config script
     - Identify the operating system installed on that partition.
     - List boot programs.
     - Display the partition table.
