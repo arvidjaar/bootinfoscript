@@ -3137,7 +3137,12 @@ for HI in ${!HDName[@]} ; do
     fabe) BL='No boot loader?';;
     faeb) BL='Lilo';; 
     fafc) BL='ReactOS';;
-    fc31) BL='Testdisk';;
+    fc31) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
+	  case ${MBR_sig8} in
+	    fc31c08ed031e48e) BL='Testdisk';;
+	    fc31c08ec08ed88e) BL='boot0 (FreeBSD)';;
+	    fc31*	    ) BL='No boot loader?';;
+	  esac;;
     fc33) BL='GAG';;
     fceb) BL='BootIt NG';;
     0000) BL='No boot loader';;
