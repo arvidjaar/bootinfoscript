@@ -3139,7 +3139,7 @@ for HI in ${!HDName[@]} ; do
     fafc) BL='ReactOS';;
     fc31) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig8} in
-	    fc31c08ed031e48e) BL='Testdisk';;
+	    fc31c08ed031e48e) BL='install-mbr/Testdisk';;
 	    fc31c08ec08ed88e) BL='boot0 (FreeBSD)';;
 	    fc31*	    ) BL='No boot loader?';;
 	  esac;;
