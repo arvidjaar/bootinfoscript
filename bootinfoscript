@@ -3132,8 +3132,9 @@ for HI in ${!HDName[@]} ; do
     fab8) # Look at the first 4 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig4} in
 	    fab80000) BL='FreeDOS (eXtended FDisk)';;
-	    fab8*   ) BL="No boot loader";;  
-	  esac;;   
+	    fab80010) BL="libparted MBR boot code";;
+	    fab8*   ) BL="No boot loader?";;
+	  esac;;
     fabe) BL='No boot loader?';;
     faeb) BL='Lilo';; 
     fafc) BL='ReactOS';;
