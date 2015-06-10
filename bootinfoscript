@@ -3065,7 +3065,7 @@ for HI in ${!HDName[@]} ; do
     0ebe) BL='ThinkPad';;
     31c0) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig8} in
-	    31c08ed0bc007c8e) BL='SUSE generic MBR';;
+	    31c08ed0bc007c8e) BL='NetBSD/SUSE generic MBR';;
 	    31c08ed0bc007cfb) BL='Acer PQService MBR';;
 	  esac;;
     33c0) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
