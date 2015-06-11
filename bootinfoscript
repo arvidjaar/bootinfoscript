@@ -3065,7 +3065,7 @@ for HI in ${!HDName[@]} ; do
     0ebe) BL='ThinkPad';;
     31c0) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig8} in
-	    31c08ed0bc007c8e) BL='SUSE generic MBR';;
+	    31c08ed0bc007c8e) BL='NetBSD/SUSE generic MBR';;
 	    31c08ed0bc007cfb) BL='Acer PQService MBR';;
 	  esac;;
     33c0) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
@@ -3090,7 +3090,11 @@ for HI in ${!HDName[@]} ; do
 	  esac;;
     33ff) BL='HP/Gateway';;
     b800) BL='Plop';;
-    ea05) BL='XOSL';;
+    ea05)
+	  case ${MBR_sig3} in
+	    ea0500) BL='OpenBSD generic MBR';;
+	    ea0501) BL='XOSL';;
+	  esac;;
     ea1e) BL='Truecrypt Boot Loader';;
     eb04) BL='Solaris';;
     eb31) BL='Paragon';;
@@ -3128,12 +3132,18 @@ for HI in ${!HDName[@]} ; do
     fab8) # Look at the first 4 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig4} in
 	    fab80000) BL='FreeDOS (eXtended FDisk)';;
-	    fab8*   ) BL="No boot loader";;  
-	  esac;;   
+	    fab80010) BL="libparted MBR boot code";;
+	    fab8*   ) BL="No boot loader?";;
+	  esac;;
     fabe) BL='No boot loader?';;
     faeb) BL='Lilo';; 
     fafc) BL='ReactOS';;
-    fc31) BL='Testdisk';;
+    fc31) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
+	  case ${MBR_sig8} in
+	    fc31c08ed031e48e) BL='install-mbr/Testdisk';;
+	    fc31c08ec08ed88e) BL='boot0 (FreeBSD)';;
+	    fc31*	    ) BL='No boot loader?';;
+	  esac;;
     fc33) BL='GAG';;
     fceb) BL='BootIt NG';;
     0000) BL='No boot loader';;
