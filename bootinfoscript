@@ -2458,11 +2458,14 @@ Get_Partition_Info() {
 	0000) # If the first two bytes are zero, the boot sector does not contain any boot loader.
 	      BST='-';;
 
-	   *) BST='Unknown';
-	      printf "Unknown BootLoader on ${name}\n\n" >> ${Unknown_MBR};
-	      hexdump -n 512 -C ${part} >> ${Unknown_MBR};
-	      echo >> ${Unknown_MBR};;
   esac
+
+  if [ x"${BST}" = 'x' ] ; then
+     BST='Unknown';
+     printf "Unknown BootLoader on ${name}\n\n" >> ${Unknown_MBR};
+     hexdump -n 512 -C ${part} >> ${Unknown_MBR};
+     echo >> ${Unknown_MBR};
+  fi
 
   # Display the boot sector type.
   echo "    Boot sector type:  ${BST}" >> "${Log}";
@@ -3002,6 +3005,7 @@ for HI in ${!HDName[@]} ; do
   MBR_bytes80to81="${MBR_512:256:4}";
 
 
+  BL=;
   case ${MBR_sig2} in
 
     eb48) ## Grub Legacy is in the MBR. ##
@@ -3133,25 +3137,25 @@ for HI in ${!HDName[@]} ; do
 	  case ${MBR_sig4} in
 	    fab80000) BL='FreeDOS (eXtended FDisk)';;
 	    fab80010) BL="libparted MBR boot code";;
-	    fab8*   ) BL="No boot loader?";;
 	  esac;;
-    fabe) BL='No boot loader?';;
     faeb) BL='Lilo';; 
     fafc) BL='ReactOS';;
     fc31) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig8} in
 	    fc31c08ed031e48e) BL='install-mbr/Testdisk';;
 	    fc31c08ec08ed88e) BL='boot0 (FreeBSD)';;
-	    fc31*	    ) BL='No boot loader?';;
 	  esac;;
     fc33) BL='GAG';;
     fceb) BL='BootIt NG';;
     0000) BL='No boot loader';;
-       *) BL='No known boot loader';
-	  printf "Unknown MBR on ${drive}\n\n" >> ${Unknown_MBR};
-	  hexdump -v -n 512 -C ${drive} >> ${Unknown_MBR};
-	  echo >> ${Unknown_MBR};;
   esac
+
+  if [ x"${BL}" = 'x' ] ; then
+     BL='No known boot loader';
+     printf "Unknown MBR on ${drive}\n\n" >> ${Unknown_MBR};
+     hexdump -v -n 512 -C ${drive} >> ${Unknown_MBR};
+     echo >> ${Unknown_MBR};
+  fi
 
 
   ## Output message at beginning of summary that gives MBR info for each drive: ##
