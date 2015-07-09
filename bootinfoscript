@@ -3089,8 +3089,9 @@ for HI in ${!HDName[@]} ; do
 	  esac;;
     33ed) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
 	  case ${MBR_bytes80to81} in
-	    407c) BL='ISOhybrid (Syslinux 4.04 and higher)';;
+	    407c) BL='ISOhybrid (Syslinux 4.04)';;
 	    83e1) BL='ISOhybrid with partition support (Syslinux 4.04 and higher)';;
+	    f7e1) BL='ISOhybrid (Syslinux 4.05 and higher)';;
 	  esac;;
     33ff) BL='HP/Gateway';;
     b800) BL='Plop';;
