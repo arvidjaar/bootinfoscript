@@ -610,6 +610,7 @@ core_img_file_type_2=${Folder}/core_img_type_2	# File to temporarily store the c
 PartitionTable=${Folder}/PT			# File to store the Partition Table.
 FakeHardDrives=${Folder}/FakeHD			# File to list devices which seem to have  no corresponding drive.
 BLKID=${Folder}/BLKID				# File to store the output of blkid.
+GRUB200_Module=${Folder}/GRUB200_Module		# File to store current grub2 module
 
 
 
@@ -1766,6 +1767,99 @@ grub2_read_blocklist () {
 
 ## Grub2 ##
 #
+#   Determine the embeded module name. This function implements manual
+#   parsing of ELF information to avoid dependency on binutils or similar.
+#
+
+grub2_modname ()
+{
+  local modfile=$1;
+  local file_size=$2;
+  local e_ehsize sht_offset sht_entsize sht_num sht_shdrndx sht_strtab;
+  local sht_strtabsize s_nameidx s_type s_name m_offset m_size;
+  local i=0;
+
+  # ELF header is at least 52 bytes in size
+  if [ "${file_size}" -lt 52 ] ; then
+    return;
+  fi
+
+  # ELF Magic + CLASS32 + LSB + VERSION
+  if [ "$(hexdump -n 7 -e '4/1 "%02x" 3/1 "%x"' "${modfile}")" != '7f454c46111' ] ; then
+    return;
+  fi
+
+  # RELOCATABLE + MACHINE + VERSION
+  if [ "$(hexdump -s 16 -n 8 -e '2/2 "%x" 1/4 "%x"' "${modfile}")" != '131' ] ; then
+    return;
+  fi
+
+  # ELF header size
+  e_ehsize=$(hexdump -s 40 -n 2 -e '"%u"' "${modfile}")
+  if [ "${e_ehsize}" -lt 52 -o "${e_ehsize}" -gt "${file_size}" ] ; then
+    return;
+  fi
+
+  # Offset of section headers table
+  sht_offset=$(hexdump -s 32 -n 4 -e '"%u"' "${modfile}")
+  if [ "${sht_offset}" -lt "${e_ehsize}" -o "${sht_offset}" -ge "${file_size}" ] ; then
+    return;
+  fi
+
+  # Size of section header
+  sht_entsize=$(hexdump -s 46 -n 2 -e '"%u"' "${modfile}")
+
+  # Number of section headers
+  sht_num=$(hexdump -s 48 -n 2 -e '"%u"' "${modfile}")
+  if [ "${sht_entsize}" -eq 0 -o "${sht_num}" -eq 0 -o $((sht_offset + sht_entsize*sht_num)) -gt "${file_size}" ] ; then
+    return;
+  fi
+
+  # Index of section names string table
+  sht_shdrndx=$(hexdump -s 50 -n 2 -e '"%u"' "${modfile}")
+  if [ "${sht_shdrndx}" -ge "${sht_num}" ] ; then
+    return;
+  fi
+
+  # Offset of section names string table
+  sht_strtab=$(hexdump -s $((sht_offset + $((sht_shdrndx*sht_entsize)) + 16))  -n 4 -e '"%u"' "${modfile}");
+  if [ "${sht_strtab}" -lt "${e_ehsize}" -o "${sht_strtab}" -ge "${file_size}" ] ; then
+    return;
+  fi
+
+  # Size of section names string table
+  sht_strtabsize=$(hexdump -s $((sht_offset + $((sht_shdrndx*sht_entsize)) + 20))  -n 4 -e '"%u"' "${modfile}");
+  if [ "${sht_strtabsize}" -eq 0 -o "${sht_strtabsize}" -gt "$((file_size-sht_strtab))" ] ; then
+    return;
+  fi
+
+  while [ "${i}" -lt $((sht_entsize*sht_num)) ] ; do
+    s_nameidx=$(hexdump -s $((sht_offset + i))  -n 4 -e '"%u"' "${modfile}");
+    if [ "${s_nameidx}" -lt "${sht_strtabsize}" ] ; then
+      s_type=$(hexdump -s $((sht_offset + i + 4))  -n 4 -e '"%u"' "${modfile}");
+      # PROGBITS
+      if [ "${s_type}" -eq 1 ] ; then
+	s_name=$(hexdump -s $((sht_strtab + s_nameidx))  -n "${sht_strtabsize}" -e "1/${sht_strtabsize} \"%s\"" "${modfile}");
+	if [ "${s_name}" = '.modname' ] ; then
+	  m_offset=$(hexdump -s $((sht_offset + i + 16))  -n 4 -e '"%u"' "${modfile}");
+	  m_size=$(hexdump -s $((sht_offset + i + 20))  -n 4 -e '"%u"' "${modfile}");
+	  if [ $((m_offset + m_size)) -lt "${file_size}" ] ; then
+	    hexdump -s "${m_offset}"  -n "${m_size}" -e "/${m_size} \"%s\"" "${modfile}";
+	    return
+	  fi
+	fi
+      fi
+    fi
+    : $((i+=sht_entsize))
+  done
+
+  # Display "???" as indication that parsing failed
+  printf '%s' '???'
+  return
+}
+
+## Grub2 ##
+#
 #   Determine the (embeded) location of core.img for a Grub2 boot.img file,
 #   determine the path of the grub2 directory and look for an embedded config file.
 #
@@ -1786,7 +1880,7 @@ grub2_info () {
   local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
-  local core_img_flavour='detect';
+  local core_img_flavour='detect' modname all_modules need_core_prologue=0;
 
   > ${core_img_file_type_2}
 
@@ -2020,11 +2114,20 @@ grub2_info () {
 
 			   eval $( hexdump -v -n 8 -s ${grub_module_header_offset} -e '1/4 "grub_module_type=%u; " 1/4 "grub_module_size=%u;"' ${core_img_file_unlzma} );
 
-			   if [ ${grub_module_type} -eq 1 ] ; then
+			   if [ ${grub_module_type} -eq 0 ] ; then
+			      # Regular ELF module
+			      dd count=$(( grub_module_size - 8 )) skip=$(( grub_module_header_offset + 8 )) if=${core_img_file_unlzma} of=${GRUB200_Module} bs=1;
+			      modname=$(grub2_modname ${GRUB200_Module} $(( grub_module_size - 8 )));
+			      if [ -n "${modname}" ] ; then
+			        all_modules="${all_modules} ${modname}";
+				need_core_prologue=1;
+			      fi
+			   elif [ ${grub_module_type} -eq 1 ] ; then
 			      # "stale" ELF module on fedora or memory disk everywhere else
 			      if [ ${core_img_flavour} = 'detect' ] ; then
 				 if [ "$(hexdump -v -n 4 -s $((grub_module_header_offset+8)) -e '"%c"' ${core_img_file_unlzma})" = $'\x7f''ELF' ] ; then
 				    # fedora "stale" ELF module
+				    # TODO display Fedora stale modules
 				    core_img_flavour='fedora';
 				 else
 				    core_img_flavour='upstream';
@@ -2041,6 +2144,7 @@ grub2_info () {
 			      if [ ${core_img_flavour} = 'upstream' ] ; then
 				 # This module is an embedded config file.
 				 embedded_config_found=1;
+				 need_core_prologue=1;
 
 				 # Remove padding "\0"'s at the end.
 				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
@@ -2065,6 +2169,7 @@ grub2_info () {
 			      elif [ ${core_img_flavour} = 'fedora' ] ; then
 				 # This module is an embedded config file.
 				 embedded_config_found=1;
+				 need_core_prologue=1;
 
 				 # Remove padding "\0"'s at the end.
 				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
@@ -2124,6 +2229,7 @@ grub2_info () {
 	fi
 	if [ ${core_img_flavour} = 'upstream' ] ; then
 	   embedded_config_found=1;
+	   need_core_prologue=1;
 
 	   # Remove padding "\0"'s at the end.
 	   embedded_config=$( hexdump -v -e '"%_c"' ${core_img_file_type_2} | sed -e 's/\(\\0\)\+$//' );
@@ -2158,10 +2264,21 @@ grub2_info () {
 	fi
      fi
 
+     if [ ${need_core_prologue} -eq 1 ] ; then
+	Grub2_Msg=$(printf "${Grub2_Msg}. It also embeds following components:");
+     fi
+
+     if [ -n "${all_modules}" ] ; then
+
+	all_modules="${all_modules# }";
+	Grub2_Msg=$(printf "${Grub2_Msg}\n\nmodules\n--------------------------------------------------------------------------------\n${all_modules}\n--------------------------------------------------------------------------------");
+
+     fi
+
      if [ ${embedded_config_found} -eq 1 ] ; then
 	# Embedded config file found.
 
-	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}\n--------------------------------------------------------------------------------\n");
+	Grub2_Msg=$(printf "${Grub2_Msg}\n\nconfig script\n--------------------------------------------------------------------------------\n${embedded_config}\n--------------------------------------------------------------------------------");
 
      fi
   fi
