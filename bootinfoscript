@@ -2761,6 +2761,7 @@ Get_Partition_Info() {
 
 	[ -s "${mountname}/etc/redhat-release" ] && OS=$(cat "${mountname}"/etc/redhat-release | tr -d '\n');
 
+	[ -s "${mountname}/etc/os-release" ] && grep -q '^PRETTY_NAME=' "${mountname}/etc/os-release" && OS=$(eval "$(grep '^PRETTY_NAME=' "${mountname}"/etc/os-release)"; printf '%s' "${PRETTY_NAME}" | tr -d '\n');
 
 
 	## Search for the files in ${Bootfiles} ##
