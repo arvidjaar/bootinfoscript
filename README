@@ -64,6 +64,9 @@ Features:
 
 * Look at each MBR and identify its boot loader:
     - For GRUB and SuperGRUB: display the controlling partition.
+    - For GRUB2: display the disk offset of the core.img as recorded in
+                 the boot sector. Parse core.img and display embedded
+                 prefix and config script.
     - If the MBR is unknown, display the whole MBR.
 
 * Look at all partitions:
@@ -71,6 +74,9 @@ Features:
     - Identify their boot sectors.
         ° For GRUB: display the controlling partition and the offset of the
                     stage2 file as recorded in the boot sector.
+        ° For GRUB2: display the disk offset of the core.img as recorded in
+                     the boot sector. Parse core.img and display embedded
+                     prefix and config script.
         ° For Syslinux: display the full version name, check if internal
                         checksum matches, display installation directory,
                         display offset of the ldlinux.sys file.

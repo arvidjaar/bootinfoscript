@@ -1,6 +1,36 @@
 CHANGELOG:
 ==========
 
+Version 0.71 (2015-07-11)
+  * New maintainer: Andrei Borzenkov.
+  * This version is hosted to github. Update all links and autupdate code.
+  * GRUB2 V2.00 and later support.
+  * Detect Windows 8.
+  * Require gawk or mawk 1.3.4 or later.
+  * New GUIDs added: - Intel Fast Flash
+                     - Apple Core Storage
+                     - Haiku
+                     - MidnightBSD partitions
+  * Detect which Windows version created the MBR or VBR.
+  * Use OS name from /etc/redhat-release if available.
+  * Add Windows 7/2008 detection for FAT16 and Windows 2008 detection for FAT32.
+  * Rework LVM detection code to be more robust; requires "lvs" command.
+  * Fix GRUB2 core.img parsing on Fedora 18.
+  * Collect /dev/disk/by-id as well.
+  * Improve detection of LZMA stream offset in GRUB2.
+  * Improve dmraid check for missing devices.
+  * Also probe KVM ans Xen virtual disks (/dev/vd* and /dev/xvd*).
+  * Fix detection of RHEL7 GRUB2 core.img.
+  * More MBR signatures added:
+      - OpenBSD's MBR code
+      - FreeBSD's MBR code
+      - install-mbr code
+      - NetBSD's MBR
+      - libparted MBR
+  * Detect Syslinux 4.05 and above ISOhybrid MBR (with optional partition
+    support).
+  * Detect Syslinux 5.00 and above MBR.
+
 Version 0.61 (2012-04-01)
   * Add README file.
   * Add --update switch to make it easier to download the last development

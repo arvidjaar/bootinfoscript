@@ -1,12 +1,13 @@
 #!/bin/bash
-VERSION='0.61';
-RELEASE_DATE='1 April 2012';
+VERSION='0.71';
+RELEASE_DATE='11 June 2015';
 LAST_GIT_COMMIT_SHORTLOG='';
 LAST_GIT_COMMIT_DATE='';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
 # Copyright (c) 2011-2012      Gert Hulselmans                                 #
+# Copyright (c) 2013-2015      Andrei Borzenkov                                #
 #                                                                              #
 # Permission is hereby granted, free of charge, to any person obtaining a copy #
 # of this software and associated documentation files (the "Software"), to     #
@@ -28,12 +29,14 @@ LAST_GIT_COMMIT_DATE='';
 #                                                                              #
 ################################################################################
 #                                                                              #
-# Current developer:  Gert Hulselmans                                          #
+# Current developer:  Andrei Borzenkov                                         #
 #                                                                              #
+# Past developer:     Gert Hulselmans                                          #
 # Past developer:     Ulrich Meierfrankenfeld (meierfra) (ubuntuforums.org)    #
 # Past contributor:   caljohnsmith (ubuntuforums.org)                          #
 #                                                                              #
-# Hosted at:          http://sourceforge.net/projects/bootinfoscript/          #
+# Hosted at:          https://github.com/arvidjaar/bootinfoscript              #
+# Forked from:        http://sourceforge.net/projects/bootinfoscript/          #
 #                                                                              #
 # The birth of Boot Info Script:                                               #
 #                     http://ubuntuforums.org/showthread.php?t=837791          #
@@ -135,9 +138,9 @@ help () {
 #   "bootinfoscript_YYYY-MM-DD_hh:mm:ss".
 
 update () {
-  local git_bis_start_url='http://sourceforge.net/p/bootinfoscript/code/ci';
-  local git_bis_end_url='tree/bootinfoscript?format=raw';
-  local git_commit_url='http://bootinfoscript.sourceforge.net/bis-last-commit.txt'
+  local git_ref_url='https://api.github.com/repos/arvidjaar/bootinfoscript/git/refs/heads/master'
+  local git_commit_url='https://api.github.com/repos/arvidjaar/bootinfoscript/git/commits'
+  local git_contents_url='https://github.com/arvidjaar/bootinfoscript/raw/master/bootinfoscript'
 
   # Check if date is available.
   if [ $(type date > /dev/null 2>&1 ; echo $?) -ne 0 ] ; then
@@ -157,24 +160,24 @@ update () {
   # Check if wget or curl is available
   if [ $(type wget > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf '\nDownloading last development version of Boot Info Script from git:\n\n';
-     LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}" 2> /dev/null);
-     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
+     LAST_GIT_COMMIT_ID=$(wget -O - "${git_ref_url}" | sed -ne 's/^.*"sha": "\(.*\)".*$/\1/p');
+     LAST_GIT_COMMIT=$(wget -O - "${git_commit_url}/$LAST_GIT_COMMIT_ID");
 
-     wget -O "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
+     wget -O "${GIT_BIS_FILENAME}" "${git_contents_url}";
   elif [ $(type curl > /dev/null 2>&1 ; echo $?) -eq 0 ] ; then
      printf 'Downloading last development version of Boot Info Script from git:\n\n';
-     LAST_GIT_COMMIT=$(curl "${git_commit_url}");
-     LAST_GIT_COMMIT_ID="${LAST_GIT_COMMIT:0:40}";
-     LAST_GIT_COMMIT_DATE="${LAST_GIT_COMMIT:41:25}";
-     LAST_GIT_COMMIT_SHORTLOG="${LAST_GIT_COMMIT:67}";
+     LAST_GIT_COMMIT_ID=$(curl "${git_ref_url}" | sed -ne 's/^.*"sha": "\(.*\)".*$/\1/p');
+     LAST_GIT_COMMIT=$(curl "${git_commit_url}/$LAST_GIT_COMMIT_ID");
 
-     curl -o "${GIT_BIS_FILENAME}" "${git_bis_start_url}/${LAST_GIT_COMMIT_ID}/${git_bis_end_url}";
+     curl -o "${GIT_BIS_FILENAME}" "${git_contents_url}";
   else
      printf '"wget" or "curl" could not be found.\nInstall at least one of them and try again.\n' >&2;
      exit 1;
   fi
+
+  # First date is Author, second date is Commit
+  LAST_GIT_COMMIT_DATE=$(echo "${LAST_GIT_COMMIT}" | sed -ne 's/^[[:space:]]*"date": "\(.*\)"[[:space:]]*$/\1/p' | tail -1);
+  LAST_GIT_COMMIT_SHORTLOG=$(echo "${LAST_GIT_COMMIT}" | sed -n -e '/^[[:space:]]*"message":/ { s/^[[:space:]]*"message": "\(.*\)",[[:space:]]*$/\1/ ; s/\\n.*$// ; p }');
 
   # Set the retrieval date in just downloaded script.
   sed -i -e "4,0 s@LAST_GIT_COMMIT_SHORTLOG='';@LAST_GIT_COMMIT_SHORTLOG='${LAST_GIT_COMMIT_SHORTLOG}';@" \
@@ -603,6 +606,7 @@ Unknown_MBR=${Folder}/Unknown_MBR		# File to record all unknown MBR and Boot sec
 Tmp_Log=${Folder}/Tmp_Log			# File to temporarily hold some information.
 core_img_file=${Folder}/core_img		# File to temporarily store an embedded core.img of grub2.
 core_img_file_unlzma=${Folder}/core_img_unlzma	# File to temporarily store the uncompressed part of core.img of grub2.
+core_img_file_type_2=${Folder}/core_img_type_2	# File to temporarily store the core.img module of type 2
 PartitionTable=${Folder}/PT			# File to store the Partition Table.
 FakeHardDrives=${Folder}/FakeHD			# File to list devices which seem to have  no corresponding drive.
 BLKID=${Folder}/BLKID				# File to store the output of blkid.
@@ -619,7 +623,7 @@ exec 2> ${Error_Log};
 #
 #   Support more than 26 drives.
 
-All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] 2>> ${Trash});
+All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/xvd[a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] 2>> ${Trash});
 
 
 ## Add found RAID disks to list of hard drives. ##
@@ -627,7 +631,7 @@ All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-
 if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
   InActiveDMRaid=$(dmraid -si -c);
 
-  if [ x"${InActiveDMRaid}" = x"no raid disks" ] ; then 
+  if [ x"${InActiveDMRaid}" = x"no raid disks" ] || [ x"${InActiveDMRaid}" = x"no block devices found" ] ; then 
      InActiveDMRaid='';
   fi
 
@@ -635,8 +639,9 @@ if [ $(type dmraid >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
      dmraid -ay ${InActiveDMRaid} >> ${Trash};
   fi
 
-  if [ x"$(dmraid -sa -c)" != x"no raid disks" ] ; then
-     All_DMRaid=$(dmraid -sa -c | ${AWK} '{ print "/dev/mapper/"$0 }');
+  All_DMRaid=$(dmraid -sa -c);
+  if [ x"${All_DMRaid}" != x"no raid disks" ] && [ x"${All_DMRaid}" != x"no block devices found" ] ; then
+     All_DMRaid=$(echo "{All_DMRaid}" | ${AWK} '{ print "/dev/mapper/"$0 }');
      All_Hard_Drives="${All_Hard_Drives} ${All_DMRaid}";
   fi  
 fi
@@ -1724,6 +1729,41 @@ stage2_loc () {
 
 
 
+
+## Grub2 ##
+#
+#   Collect fragments of core.img using information encoded in the first
+#   block (diskboot.img).
+#
+
+grub2_read_blocklist () {
+  local hdd="$1";
+  local core_img_file="$2";
+
+  local sector_nr fragment_size fragment_offset=1 block_list=500;
+
+  # Assemble fragments from "hdd" passed to grub2_info.
+  # Each block list entry is 12 bytes long and consists of
+  #   8 bytes = fragment start absolute disk offset in sectors
+  #   2 bytes = fragment size in sectors
+  #   2 bytes = memory segment to load fragment into
+  # Entries start at the end of the first sector of core.img and
+  # go down. End marker is all zeroes.
+  
+  while [ ${block_list} -gt 12 ] ; do
+     sector_nr=$(hexdump -v -n 8 -s ${block_list} -e '1/8 "%u"' ${core_img_file});
+     if [ ${sector_nr} -eq 0 ] ; then
+	return;
+     fi
+
+     fragment_size=$(hexdump -v -n 2 -s $((block_list+8)) -e '1/2 "%u"' ${core_img_file});
+
+     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} seek=${fragment_offset} count=${fragment_size} 2>> ${Trash} || return;
+     let "fragment_offset += fragment_size";
+     let "block_list -= 12";
+  done
+}
+
 ## Grub2 ##
 #
 #   Determine the (embeded) location of core.img for a Grub2 boot.img file,
@@ -1737,13 +1777,18 @@ grub2_info () {
   # with a more exact value later (needs to be a global variable).
   grub2_version="$3";
 
+  # Have we got plain file or need to collect full core.img from blocklists?
+  local core_source="$4";
+
   local sector_offset drive_offset directory_offset sector_nr drive_nr drive_nr_hex;
   local partition core_dir embedded_config HI magic core_img_found=0 embedded_config_found=0;
   local total_module_size kernel_image_size compressed_size offset_lzma lzma_uncompressed_size;
   local grub_module_info_offset grub_module_magic grub_modules_offset grub_modules_size;
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
+  local core_img_flavour='detect';
 
+  > ${core_img_file_type_2}
 
   case "${grub2_version}" in
     1.96) sector_offset='68';  drive_offset='76'; directory_offset='553';;
@@ -1771,8 +1816,8 @@ grub2_info () {
     if [ ${hdd} = ${HDName[${HI}]} ] ; then
        if [ ${sector_nr} -lt ${HDSize[HI]} ] ; then
 
-	  if [ ${sector_nr} -eq 1 ] ; then
-	     # Use "file/partition/drive" passed to grub2_info directly.
+	  if [ "${core_source}" = 'file' ] ; then
+	     # Use "file" passed to grub2_info directly.
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
 	     # Use "hdd" passed to grub2_info.
@@ -1781,22 +1826,32 @@ grub2_info () {
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
 
-	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] ) ; then
+	  # 52bff481 - RHEL7 diskboot.S with patched out message
+	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] || [ "${magic}" = '52bff481' ] ) ; then
 	     # core.img file was found.
 	     core_img_found=1;
 
 	     if ( [ "${grub2_version}" = '1.99' ] || [ "${grub2_version}" = '1.99-2.00' ] || [ "${grub2_version}" = '2.00' ] ) ; then
 		# Find the last 8 bytes of lzma_decode to find the offset of the lzma_stream:
 		#   - v1.99: "d1 e9 df fe ff ff 00 00"
-		#   - v2.00: "d1 e9 df fe ff ff 66 90"
-		#            "d1 e9 df fe ff ff 8d b6" (openSUSE 12.2)
+		#   - v2.00: "d1 e9 df fe ff ff 66 90" (pad bytes NOP)
+		#            "d1 e9 df fe ff ff 8d"    (pad bytes LEA ...)
+		#
+		# arvidjaar@gmail.com:
+		#   final directive in startup_raw.S is .p2align 4 which
+		#   (at least using current GCC/GAS) adds lea instructions
+		#   (8d...). Exact format and length apparently depend on pad
+		#   size and may be on toolkit version. So just accept anything
+		#   starting with lea.
+		#
+		# FIXME what if it ends on exact 16 byte boundary?
 
 		eval $(hexdump -v -n 10000 -e '1/1 "%02x"' ${core_img_file} | \
 		     ${AWK} '{ found_at=match($0, "d1e9dffeffff" ); if (found_at == "0") { print "offset_lzma=0" } \
 			    else { print "offset_lzma=" ((found_at - 1 ) / 2 ) + 8 "; lzma_decode_last8bytes=" substr($0,found_at,16) ";" } }');
 
 		if [ "${grub2_version}" = '1.99-2.00' ] ; then
-		   if ( [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" ] || [ "${lzma_decode_last8bytes}" = "d1e9dffeffff8db6" ] ) ; then
+		   if ( [ "${lzma_decode_last8bytes}" = "d1e9dffeffff6690" ] || [ "${lzma_decode_last8bytes:0:14}" = "d1e9dffeffff8d" ] ) ; then
 		      grub2_version='2.00';
 		   else
 		      grub2_version='1.99';
@@ -1889,6 +1944,12 @@ grub2_info () {
 		fi
 	     elif [ "${grub2_version}" = '2.00' ] ; then
 
+		# First make sure to collect core.img fragments if it is
+		# embedded.
+		if [ "${core_source}" = 'disk' ] || [ "${core_source}" = 'partition' ] ; then
+		   grub2_read_blocklist "${hdd}" ${core_img_file};
+		fi
+
 		# For Grub2 (v2.00), the core_dir is stored in the compressed part of core.img in the same
 		# way as the modules and embedded config file.
 		
@@ -1908,9 +1969,10 @@ grub2_info () {
 		   if [ ${offset_lzma} -ne 0 ] ; then
 
 		      # Grub2 pads the start of the lzma stream to a 16 bytes boundary.
-		      # Correct the offset to the lzma stream if necessary (are the padded bytes zeros?).
+		      # Correct the offset to the lzma stream if necessary
+		      # Current GCC adds lea instructions as pad bytes
 		      padsize=$(( (((${offset_lzma} + 15) >> 4) << 4) - ${offset_lzma} )); 
-		      if ( [ ${padsize} -gt 0 ] && [ -z "$(hexdump -v -s ${offset_lzma} -n ${padsize} -e '1/1 "%02x"'  ${core_img_file} | tr -d 0)" ] ) ; then 
+		      if ( [ ${padsize} -gt 0 ] ) ; then 
 			 offset_lzma=$(( ${offset_lzma} + ${padsize} )); 
 		      fi
 
@@ -1937,26 +1999,98 @@ grub2_info () {
 			 grub_module_header_offset=$(( ${grub_module_info_offset} + ${grub_modules_offset} ));
 
 			 # Traverse through the list of modules and check if it is a config module.
+			 # Upstream GRUB2 supports following module types:
+			 #   0 - ELF modules; may be included multiple times
+			 #   1 - memory disk image; should be included just once
+			 #   2 - embedded initial configuration code; should be included just once
+			 #   3 - initial value of ${prefix} variable. Device part may be omitted,
+			 #       in which case device is guessed at startup
+			 #   4 - public GPG keyring used for file signature checking;
+			 #       may be included multiple times
+			 #
+			 # All parts are optional (although in practice
+			 # at least drivers for disk and filesystem must be
+			 # present).
+			 #
+			 # Since RPM version 2.00-10 fedora includes patch that
+			 # inserts additional module type after the first one,
+			 # thus shifting all numbers starting with 1. So
+			 # embedded config and prefix become 3 and 4 on fedora.
 			 while [ ${grub_module_header_offset} -lt ${grub_modules_end_offset} ] ; do
 
 			   eval $( hexdump -v -n 8 -s ${grub_module_header_offset} -e '1/4 "grub_module_type=%u; " 1/4 "grub_module_size=%u;"' ${core_img_file_unlzma} );
 
-			   if [ ${grub_module_type} -eq 2 ] ; then
-			      # This module is an embedded config file.
-			      embedded_config_found=1;
+			   if [ ${grub_module_type} -eq 1 ] ; then
+			      # "stale" ELF module on fedora or memory disk everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 if [ "$(hexdump -v -n 4 -s $((grub_module_header_offset+8)) -e '"%c"' ${core_img_file_unlzma})" = $'\x7f''ELF' ] ; then
+				    # fedora "stale" ELF module
+				    core_img_flavour='fedora';
+				 else
+				    core_img_flavour='upstream';
+				 fi
+			      fi
 
-			      embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} );
-			      # Remove "\0" at the end.
-			      embedded_config=$( printf "${embedded_config%\\0}" );
+			   elif [ ${grub_module_type} -eq 2 ] ; then
+			      # memory disk on fedora or embedded config everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+			         # Normally core.img will have prefix which is easier to detect,
+			         # so leave detection as last resort.
+			         dd if=${core_img_file_unlzma} of=${core_img_file_type_2} bs=1 skip=$((grub_module_header_offset+8)) count=$((grub_module_size-8)) 2>> ${Trash};
+			      fi
+			      if [ ${core_img_flavour} = 'upstream' ] ; then
+				 # This module is an embedded config file.
+				 embedded_config_found=1;
+
+				 # Remove padding "\0"'s at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      fi
 
 			   elif [ ${grub_module_type} -eq 3 ] ; then
-			      # This module contains the prefix.
+			      # embedded config on fedora or prefix everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 # if it looks like file name, assume prefix
+				 if [[ "$(hexdump -v -n 1 -s $(( grub_module_header_offset + 8 )) -e '"%c"' ${core_img_file_unlzma})" == [/\(] ]] ; then
+				    core_img_flavour='upstream';
+				 else
+				    core_img_flavour='fedora';
+				 fi
+			      fi
+			      if [ ${core_img_flavour} = 'upstream' ] ; then
+				 # This module contains the prefix.
 
-			      # Get core dir.
-			      core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} );
-			      # Remove "\0" at the end.
-			      core_dir=$( printf "${core_dir%\\0}" );
+				 # Get core dir.
+				 # Remove padding "\0"'s at the end.
+				 core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      elif [ ${core_img_flavour} = 'fedora' ] ; then
+				 # This module is an embedded config file.
+				 embedded_config_found=1;
 
+				 # Remove padding "\0"'s at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      fi
+
+			   elif [ ${grub_module_type} -eq 4 ] ; then
+			      # prefix on fedora or GPG keyring everywhere else
+			      if [ ${core_img_flavour} = 'detect' ] ; then
+				 # if it looks like file name, assume prefix
+			         # GPG ring normall has \x99 as first byte
+				 if [[ "$(hexdump -v -n 1 -s $(( grub_module_header_offset + 8 )) -e '"%c"' ${core_img_file_unlzma})" == [/\(] ]] ; then
+				    core_img_flavour='fedora';
+				 else
+				    core_img_flavour='upstream';
+				 fi
+			      fi
+			      if [ ${core_img_flavour} = 'fedora' ] ; then
+				 # This module contains the prefix.
+
+				 # Get core dir.
+				 # Remove padding "\0"'s at the end.
+				 core_dir=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+			      elif [ ${core_img_flavour} = 'upstream' ] ; then
+				 # TODO list GPG keyring
+				 :
+			      fi
 			   fi
 
 			   grub_module_header_offset=$(( ${grub_module_header_offset} + ${grub_module_size} ));
@@ -1976,6 +2110,27 @@ grub2_info () {
     fi
   done
 
+  if [ "${grub2_version}" = '2.00' ] ; then
+     if [ -s ${core_img_file_type_2} ] ; then
+	if [ "${core_img_flavour}" = 'detect' ] ; then
+	   # Neither type 1, 3 or 4 modules were present. So we have either
+	   # embedded config or memory disk. 
+	   if type file > /dev/null 2>&1 ; then
+	      if [[ "$(LC_ALL=C file ${core_img_file_type_2})" == *"ASCII text"* ]] ; then
+		 # upstream embedded config
+		 core_img_flavour='upstream';
+	      fi
+	   fi
+	fi
+	if [ ${core_img_flavour} = 'upstream' ] ; then
+	   embedded_config_found=1;
+
+	   # Remove padding "\0"'s at the end.
+	   embedded_config=$( hexdump -v -e '"%_c"' ${core_img_file_type_2} | sed -e 's/\(\\0\)\+$//' );
+	fi
+     fi
+  fi
+
 
   if [ ${core_img_found} -eq 0 ] ; then
      # core.img not found.
@@ -1987,20 +2142,23 @@ grub2_info () {
 	Grub2_Msg="${Grub2_Msg}. Grub2 is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
      fi
 
-     Grub2_Msg="${Grub2_Msg}. core.img is at this location"
+     Grub2_Msg="${Grub2_Msg}. core.img is at this location";
 
-     partition=$(( ${partition} + 1 ));
+     # In GRUB 2.00 core.img prefix is optional
+     if [ -n "${core_dir}" ]; then
+	Grub2_Msg="${Grub2_Msg} and looks for ${core_dir}";
 
-     if [ ${embedded_config_found} -eq 0 ] ; then
-	# No embedded config file found.
-
-	if [ ${partition} -eq 255 ] ; then
-	   Grub2_Msg="${Grub2_Msg} and looks for ${core_dir} on this drive";
-	else
-	   Grub2_Msg="${Grub2_Msg} and looks in partition ${partition} for ${core_dir}";
+	if [ -n "${partition}" ]; then
+	   partition=$(( ${partition} + 1 ));
+	   if [ ${partition} -eq 255 ] ; then
+	      Grub2_Msg="${Grub2_Msg} on this drive";
+	   else
+	      Grub2_Msg="${Grub2_Msg} in partition ${partition}";
+	   fi
 	fi
+     fi
 
-     else
+     if [ ${embedded_config_found} -eq 1 ] ; then
 	# Embedded config file found.
 
 	Grub2_Msg=$(printf "${Grub2_Msg} and uses an embedded config file:\n\n--------------------------------------------------------------------------------\n${embedded_config}\n--------------------------------------------------------------------------------\n");
@@ -2265,13 +2423,13 @@ Get_Partition_Info() {
 
 	## If Grub or Grub 2 is in the boot sector, investigate the embedded information. ##
 	48b4) BST='Grub2 (v1.96)';
-	      grub2_info ${part} ${drive} '1.96';
+	      grub2_info ${part} ${drive} '1.96' 'partition';
 	      BSI="${BSI} Grub2 (v1.96) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	7c3c) BST='Grub2 (v1.97-1.98)';
-	      grub2_info ${part} ${drive} '1.97-1.98';
+	      grub2_info ${part} ${drive} '1.97-1.98' 'partition';
 	      BSI="${BSI} Grub2 (v1.97-1.98) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
 	0020) BST='Grub2 (v1.99-2.00)';
-	      grub2_info ${part} ${drive} '1.99-2.00';
+	      grub2_info ${part} ${drive} '1.99-2.00' 'partition';
 	      BSI="${BSI} Grub2 (v${grub2_version}) is installed in the boot sector of ${name} and ${Grub2_Msg}.";;
  aa75 | 5272) BST='Grub Legacy';
 	      stage2_loc ${part};
@@ -2300,11 +2458,14 @@ Get_Partition_Info() {
 	0000) # If the first two bytes are zero, the boot sector does not contain any boot loader.
 	      BST='-';;
 
-	   *) BST='Unknown';
-	      printf "Unknown BootLoader on ${name}\n\n" >> ${Unknown_MBR};
-	      hexdump -n 512 -C ${part} >> ${Unknown_MBR};
-	      echo >> ${Unknown_MBR};;
   esac
+
+  if [ x"${BST}" = 'x' ] ; then
+     BST='Unknown';
+     printf "Unknown BootLoader on ${name}\n\n" >> ${Unknown_MBR};
+     hexdump -n 512 -C ${part} >> ${Unknown_MBR};
+     echo >> ${Unknown_MBR};
+  fi
 
   # Display the boot sector type.
   echo "    Boot sector type:  ${BST}" >> "${Log}";
@@ -2423,7 +2584,7 @@ Get_Partition_Info() {
   ## Display boot sector info. ##
 
   printf '    Boot sector info: ' >> "${Log}";
-  printf "${BSI}\n" | fold -s -w 55 | sed -e '/^-------------------------$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
+  printf "${BSI}\n" | fold -s -w 55 | sed -e '/^-------------------------\.\?$/ d' -e '2~1s/.*/                       &/' >> "${Log}";
 
 
 
@@ -2606,9 +2767,9 @@ Get_Partition_Info() {
 		     case "${sig2}" in
 		       eb48) stage2_loc "${mountname}${file}${loader}";
 			     BFI="${BFI} Grub Legacy (v${Grub_Version}) in the file ${file}${loader} ${Stage2_Msg}";;
-		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96;
+		       eb4c) grub2_info "${mountname}${file}${loader}" ${drive} 1.96 'file';
 			     BFI="${BFI} Grub2 (v1.96) in the file ${file}${loader} ${Grub2_Msg}.";;
-		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99;
+		       eb63) grub2_info "${mountname}${file}${loader}" ${drive} 1.99 'file';
 			     BFI="${BFI} Grub2 (v1.99) in the file ${file}${loader} ${Grub2_Msg}.";;
 		     esac
 		  fi
@@ -2617,7 +2778,7 @@ Get_Partition_Info() {
 		  sig=$(hexdump -v -s 392 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
-		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97-1.98;
+		     grub2_info "${mountname}${file}${loader}" ${drive} 1.97-1.98 'file';
 		     BFI="${BFI} Grub2 (v1.97-1.98) in the file ${file}${loader} ${Grub2_Msg}."; 
 		  fi
 
@@ -2625,7 +2786,7 @@ Get_Partition_Info() {
 		  sig=$(hexdump -v -s 384 -n 4  -e '4/1 "%_p"' "${mountname}${file}${loader}");
 
 		  if [ "${sig}" = 'GRUB' ]; then
-		     grub2_info "${mountname}${file}${loader}" ${drive} 2.00;
+		     grub2_info "${mountname}${file}${loader}" ${drive} 2.00 'file';
 		     BFI="${BFI} Grub2 (v2.00) in the file ${file}${loader} ${Grub2_Msg}."; 
 		  fi
 	       fi
@@ -2844,6 +3005,7 @@ for HI in ${!HDName[@]} ; do
   MBR_bytes80to81="${MBR_512:256:4}";
 
 
+  BL=;
   case ${MBR_sig2} in
 
     eb48) ## Grub Legacy is in the MBR. ##
@@ -2886,7 +3048,7 @@ for HI in ${!HDName[@]} ; do
     eb4c) ## Grub2 (v1.96) is in the MBR. ##
 	  BL='Grub2 (v1.96)';
 
-	  grub2_info ${drive} ${drive} '1.96';
+	  grub2_info ${drive} ${drive} '1.96' 'drive';
 
 	  Message="${Message} and ${Grub2_Msg}";;
 
@@ -2896,7 +3058,7 @@ for HI in ${!HDName[@]} ; do
 		0020) grub2_version='1.99-2.00'; BL='Grub2 (v1.99-2.00)';;
 	  esac
 
-	  grub2_info ${drive} ${drive} ${grub2_version};
+	  grub2_info ${drive} ${drive} ${grub2_version} 'drive';
 
 	  # Set a more exact version number (1.99 or 2.00), if '1.99-2.00' was
 	  # passed to the grub2_info function.
@@ -2907,7 +3069,7 @@ for HI in ${!HDName[@]} ; do
     0ebe) BL='ThinkPad';;
     31c0) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig8} in
-	    31c08ed0bc007c8e) BL='SUSE generic MBR';;
+	    31c08ed0bc007c8e) BL='NetBSD/SUSE generic MBR';;
 	    31c08ed0bc007cfb) BL='Acer PQService MBR';;
 	  esac;;
     33c0) # Look at the first 3 bytes of the hard drive to identify the boot code installed in the MBR.
@@ -2923,16 +3085,26 @@ for HI in ${!HDName[@]} ; do
 					esac;;
 		    esac;;
 	    33c090) BL='DiskCryptor';;
-	    33c0fa) BL='Syslinux MBR (4.04 and higher)';;			
+	    33c0fa) # Look at bytes 0x5B-5D: different offsets for jump target
+	      case ${MBR_512:182:6} in
+		e82101) BL='Syslinux MBR (4.04-4.07)';;
+		e83501) BL='Syslinux MBR (5.00 and higher)';;
+	      esac;;
 	  esac;;
     33ed) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
 	  case ${MBR_bytes80to81} in
-	    407c) BL='ISOhybrid (Syslinux 4.04 and higher)';;
-	    83e1) BL='ISOhybrid with partition support (Syslinux 4.04 and higher)';;
+	    407c) BL='ISOhybrid (Syslinux 4.04)';;
+	    83e1) BL='ISOhybrid with partition support (Syslinux 4.04)';;
+	    cd13) BL='ISOhybrid with partition support (Syslinux 4.05 and higher)';;
+	    f7e1) BL='ISOhybrid (Syslinux 4.05 and higher)';;
 	  esac;;
     33ff) BL='HP/Gateway';;
     b800) BL='Plop';;
-    ea05) BL='XOSL';;
+    ea05)
+	  case ${MBR_sig3} in
+	    ea0500) BL='OpenBSD generic MBR';;
+	    ea0501) BL='XOSL';;
+	  esac;;
     ea1e) BL='Truecrypt Boot Loader';;
     eb04) BL='Solaris';;
     eb31) BL='Paragon';;
@@ -2970,26 +3142,32 @@ for HI in ${!HDName[@]} ; do
     fab8) # Look at the first 4 bytes of the hard drive to identify the boot code installed in the MBR.
 	  case ${MBR_sig4} in
 	    fab80000) BL='FreeDOS (eXtended FDisk)';;
-	    fab8*   ) BL="No boot loader";;  
-	  esac;;   
-    fabe) BL='No boot loader?';;
+	    fab80010) BL="libparted MBR boot code";;
+	  esac;;
     faeb) BL='Lilo';; 
     fafc) BL='ReactOS';;
-    fc31) BL='Testdisk';;
+    fc31) # Look at the first 8 bytes of the hard drive to identify the boot code installed in the MBR.
+	  case ${MBR_sig8} in
+	    fc31c08ed031e48e) BL='install-mbr/Testdisk';;
+	    fc31c08ec08ed88e) BL='boot0 (FreeBSD)';;
+	  esac;;
     fc33) BL='GAG';;
     fceb) BL='BootIt NG';;
     0000) BL='No boot loader';;
-       *) BL='No known boot loader';
-	  printf "Unknown MBR on ${drive}\n\n" >> ${Unknown_MBR};
-	  hexdump -v -n 512 -C ${drive} >> ${Unknown_MBR};
-	  echo >> ${Unknown_MBR};;
   esac
+
+  if [ x"${BL}" = 'x' ] ; then
+     BL='No known boot loader';
+     printf "Unknown MBR on ${drive}\n\n" >> ${Unknown_MBR};
+     hexdump -v -n 512 -C ${drive} >> ${Unknown_MBR};
+     echo >> ${Unknown_MBR};
+  fi
 
 
   ## Output message at beginning of summary that gives MBR info for each drive: ##
 
   printf ' => ' >> "${Log}";
-  printf "${BL} ${Message}.\n" | fold -s -w 75 | sed -e '/^-----$/ d' -e '2~1s/.*/    &/' >> "${Log}";
+  printf "${BL} ${Message}.\n" | fold -s -w 75 | sed -e '/^-----\.\?$/ d' -e '2~1s/.*/    &/' >> "${Log}";
 
   HDMBR[${HI}]=${BL};
 done
@@ -3106,15 +3284,20 @@ fi
 #
 #   Only works if the "LVM2"-package is installed.
 
-if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
+if [ $(type lvs >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
 
-  LVM_Partitions=$(lvscan | ${AWK} '{ split($2, lvm_dev, "/"); print "/dev/mapper/" lvm_dev[3] "-" lvm_dev[4] }');
-
-  for LVM in ${LVM_Partitions}; do 
-    LVM_Size=$(lvdisplay -c ${LVM} | ${AWK} -F ':' '{ print $7 }');
-    LVM_Status=$(lvdisplay ${LVM} | ${AWK} '$0 ~ "LV Status" { print $3 }');
+  lvs --nameprefixes --noheadings --options lv_name,vg_name,lv_size,lv_attr --units s | \
+  while read line ; do 
+    LVM2_VG_NAME= LVM2_LV_NAME= LVM2_LV_SIZE= LVM2_LV_ATTR=
+    eval "${line}";
+    if [ -z "${LVM2_VG_NAME}" ] || [ -z "${LVM2_LV_NAME}" ] || [ -z "${LVM2_LV_SIZE}" ] || [ -z "${LVM2_LV_ATTR}" ] ; then
+       continue
+    fi
+    name="${LVM2_VG_NAME}-${LVM2_LV_NAME}";
+    LVM="/dev/mapper/${name}";
+    LVM_Size=${LVM2_LV_SIZE:0:-1};
+    LVM_Status=${LVM2_LV_ATTR:4:1};
     lvchange -ay ${LVM};
-    name=${LVM:12};
     mountname="LVM/${name}";
     kind='LVM';
     start=0;
@@ -3125,7 +3308,7 @@ if [ $(type lvscan lvdisplay lvchange >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 
     Get_Partition_Info "${Log}" "${Log1}" "$LVM" "${name}" "${mountname}" "${kind}" "${start}" "${end}" "${system}" "${PI}";
       
     # deactivate all LVM's, which were not active.
-    [[ "${LVM_Status}" = 'NOT' ]] && lvchange -an "${LVM}";
+    [[ "${LVM_Status}" != 'a' ]] && lvchange -an "${LVM}";
 
   done
 fi
@@ -3217,6 +3400,14 @@ done
 cat "${BLKID}_summary" >> "${Log}";
 echo >> "${Log}";
 
+
+
+if [ $(ls -l /dev/disk/by-id 2>> ${Trash} | wc -l) -gt 1 ] ; then
+   printf '========================= "ls -l /dev/disk/by-id" output: ======================\n\n' >> "${Log}";
+   ls -l /dev/disk/by-id >> "${Log}";
+   echo >> "${Log}";
+fi
+         
 
 
 if [ $(ls -R /dev/mapper 2>> ${Trash} | wc -l) -gt 2 ] ; then
