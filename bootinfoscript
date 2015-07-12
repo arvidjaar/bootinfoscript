@@ -2116,7 +2116,7 @@ grub2_info () {
 
 			   if [ ${grub_module_type} -eq 0 ] ; then
 			      # Regular ELF module
-			      dd count=$(( grub_module_size - 8 )) skip=$(( grub_module_header_offset + 8 )) if=${core_img_file_unlzma} of=${GRUB200_Module} bs=1;
+			      dd count=$(( grub_module_size - 8 )) skip=$(( grub_module_header_offset + 8 )) if=${core_img_file_unlzma} of=${GRUB200_Module} bs=1 2>> ${Trash};
 			      modname=$(grub2_modname ${GRUB200_Module} $(( grub_module_size - 8 )));
 			      if [ -n "${modname}" ] ; then
 			        all_modules="${all_modules} ${modname}";
