@@ -2331,6 +2331,7 @@ get_embedded_menu () {
 
 last_block_of_file () {
   local display='0';
+  local BlockSize Fragments Filefrag_Format EndGiByte EndGByte;
 
   # Remove an existing ${Tmp_Log} log.
   rm -f ${Tmp_Log};
@@ -2339,57 +2340,110 @@ last_block_of_file () {
   for file in "$@" ; do
     if [[ -f "${file}" ]] && [[ -s "${file}" ]] && FileNotMounted "${mountname}/${file}" "${mountname}" ; then
 
-       # There are at least 2 versions of filefrag.
-       # For both versions, we can get the blocksize and the location of the block
-       # of the file that is the farest away from the beginning of the disk.
-       # For the newer version, we can also get the number of file fragments.
+       # There are 4 versions of e2fsprogs filefrag output.
+       # In all cases final line could be "1 extent" instead.
+       #
+       # v1
+       #  Blocksize of file %s is %d
+       #  File size of %s is %lld (%d blocks)
+       #  %s: %d extents found[, perfection would be %d extent%s]
+       #
+       # v2
+       #  Blocksize of file %s is %d
+       #  File size of %s is %lld (%d blocks)
+       #  First block: %ld
+       #  Last block: %ld
+       #  %s: %d extents found[, perfection would be %d extent%s]
+       #
+       # v3
+       #  File size of %s is %lld (%ld block%s, blocksize %d)
+       #   ext logical physical expected length flags
+       #     0     nnn      nnn             nnn xxx
+       #     1     nnn      nnn      nnn    nnn xxx
+       #   ...
+       #  %s: %d extents found[, perfection would be %d extent%s]
+       #
+       # v4
+       #  File size of %s is %llu (%lu block%s of %d bytes)
+       #   ext: logical_offset: physical_offset: length: expected: flags:
+       #     0:    nnn..   nnn:     nnn..   nnn:    nnn:           xxx
+       #     1:    nnn..   nnn:     nnn..   nnn:    nnn:      nnn: xxx
+       #   ...
+       #  %s: %d extents found[, perfection would be %d extent%s]
+       #
+       # FIXME e2fsprogs filefrag output "Last block:", not "Last Block:".
+       #       Was there yet another filefrag implementation?
+       #
+       # XXX Original code metioned filefrag output that can show last
+       #     block but not number of extents. Unless there was some other
+       #     implementation of filefrag, it does not match e2fsprogs sources.
+       #
+       # XXX Can we hit files with spaces (field count is wrong then)?
 
        eval $(filefrag -v "${file}" \
-	     | ${AWK} -F ' ' 'BEGIN { blocksize=0; expected=0; extents=1; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_old="false"; last_block=0 } \
-		{ if ( $1 == "Blocksize" ) { blocksize=$6; filefrag_old="true" }; \
-		if ( filefrag_old == "true" ) { \
-			if ( $1$2 ~ "LastBlock:" ) { print $3 }; \
-		} else { \
-		if ( $(NF-1) == "blocksize" ) { blocksize = substr($NF,0,length($NF) - 1) }; \
-		if ( expected != 0 && ext_ind == $1 ) { \
-		   ext_ind += 1; \
-		   if ( last_ext_loc < $3 ) { \
-		      last_ext_loc = $3; \
-		      if ( substr($0, expected, 1) == " " ) { \
-			 ext_length = $4; } \
-		      else { \
-			 ext_length = $5; \
-		      } \
-		    } \
+	     | ${AWK} -F ' ' 'BEGIN { blocksize=0; expected=0; extents=0; ext_ind=0; last_ext_loc=0; ext_length=0; filefrag_format=""; last_block=0 } \
+		{ if ( $1 == "Blocksize" ) { blocksize=$6; filefrag_format="v1"; }; \
+		if ( filefrag_format == "v1" ) { \
+			if ( $1$2 ~ "LastBlock:" ) { last_block = $3 }; \
+		} else if ( $(NF-1) == "blocksize" ) { \
+		  blocksize = substr($NF,0,length($NF) - 1); \
+		  filefrag_format = "v3"; \
+		} else if ( $(NF) == "bytes)" ) { \
+		  blocksize = $(NF-1); \
+		  filefrag_format = "v4"; \
+		  FS=" *|: *|[.][.] *"; \
 		} \
-		if ($4 == "expected") { \
-		   expected= index($0,"expected") + 7; }; \
-		   if ($3 == "extents") { \
-		      extents=$2; \
-		   } \
-		} } END { \
-			if ( filefrag_old == "true" ) { \
-				bogus = last_block; \
-				EndByte = last_block * blocksize + 512 * '${start}'; \
-				printf "BlockSize=" blocksize "; Filefrag_Old=" filefrag_old "; " \
-			} else { \
-				bogus = last_ext_loc; \
-				EndByte = ( last_ext_loc + ext_length ) * blocksize + 512 * '${start}'; \
-				printf "BlockSize=" blocksize "; Fragments=" extents "; Filefrag_Old=" filefrag_old "; " \
+		if ( expected != 0 ) { \
+		   if ( filefrag_format == "v3" && ext_ind == $1 ) { \
+		     if ( last_ext_loc < $3 ) { \
+			last_ext_loc = $3; \
+			if ( substr($0, expected, 1) == " " ) { \
+			   ext_length = $4; } \
+			else { \
+			   ext_length = $5; \
 			} \
-			if ( ( bogus == 0) || ( extents == 0 ) ) { \
+		      } \
+		   } else if ( filefrag_format == "v4" && ext_ind == $2 ) { \
+		    if ( last_block < $6 ) { \
+		      last_block = $6; \
+		    } \
+		   } \
+		   ext_ind += 1; \
+		} else { \
+		  if ( filefrag_format == "v3" && $4 == "expected" ) { \
+		     expected= index($0,"expected") + 7; \
+		  } else if ( filefrag_format == "v4" && $2 == "ext" ) { \
+		    expected = 1; \
+		  } \
+		} \
+		if ( $3 == "extents" ) { \
+		  extents = $2; \
+		} else if ( $3 == "extent" ) { \
+		  extents = 1; \
+		} \
+		} \
+	       	END { \
+			if ( filefrag_format == "v3" ) { \
+				last_block = last_ext_loc + ext_length; \
+			} \
+			printf "BlockSize=" blocksize "; Fragments=" extents "; Filefrag_Format=" filefrag_format "; "; \
+			if ( last_block == 0 ) { \
 				printf "EndGiByte=??; EndGByte=??;" \
 			} else { \
+				EndByte = last_block * blocksize + 512 * '${start}'; \
 				printf "EndGiByte=%.9f; EndGByte=%.9f;", EndByte / 1024 ^ 3, EndByte / 1000 ^ 3; \
 			} \
 		}');
 
+       if [ "${Filefrag_Format}" = '' ] ; then
+	  echo "Unknown filefrag output format" >&2;
+	  return 0;
+       fi
+
        if [ "${BlockSize}" -ne 0 ] ; then
-	  if [ "${Filefrag_Old}" = "true" ] ; then
-	     # Old version of filefrag.
+	  if [ "${Fragments}" -eq 0 ] ; then
 	     printf "%14s = %-14s %s\n" "${EndGiByte}" "${EndGByte}" "${file}" >> ${Tmp_Log};
 	  else
-	     # New version of filefrag.
 	     printf "%14s = %-14s %-45s %2s\n" "${EndGiByte}" "${EndGByte}" "${file}" "${Fragments}" >> ${Tmp_Log};
 	  fi
        fi
