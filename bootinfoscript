@@ -3466,7 +3466,7 @@ if [ $(type lvs >> ${Trash} 2>> ${Trash} ; echo $?) -eq 0 ] ; then
        continue
     fi
     name="${LVM2_VG_NAME}-${LVM2_LV_NAME}";
-    LVM="/dev/mapper/${name}";
+    LVM="/dev/mapper/${LVM2_VG_NAME//-/--}-${LVM2_LV_NAME//-/--}";
     LVM_Size=${LVM2_LV_SIZE:0:-1};
     LVM_Status=${LVM2_LV_ATTR:4:1};
     lvchange -ay ${LVM};
