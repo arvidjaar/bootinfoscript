@@ -1,6 +1,12 @@
 CHANGELOG:
 ==========
 
+Version 0.72 (2015-07-29)
+  * List modules embedded in core.img for grub2 2.00 and above.
+  * Prefer /etc/os-release to get operating system name.
+  * Support new filefrag output format.
+  * Escape hyphens in LVM names to match /dev/mapper files.
+
 Version 0.71 (2015-07-11)
   * New maintainer: Andrei Borzenkov.
   * This version is hosted to github. Update all links and autupdate code.

@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION='0.71';
-RELEASE_DATE='11 June 2015';
+VERSION='0.72';
+RELEASE_DATE='29 July 2015';
 LAST_GIT_COMMIT_SHORTLOG='';
 LAST_GIT_COMMIT_DATE='';
 ################################################################################
