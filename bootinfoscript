@@ -2146,8 +2146,8 @@ grub2_info () {
 				 embedded_config_found=1;
 				 need_core_prologue=1;
 
-				 # Remove padding "\0"'s at the end.
-				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+				 # Remove padding starting with the first "\0" at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\).*$//');
 			      fi
 
 			   elif [ ${grub_module_type} -eq 3 ] ; then
@@ -2171,8 +2171,8 @@ grub2_info () {
 				 embedded_config_found=1;
 				 need_core_prologue=1;
 
-				 # Remove padding "\0"'s at the end.
-				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\)\+$//');
+				 # Remove padding starting with the first "\0" at the end.
+				 embedded_config=$( hexdump -v -n $(( ${grub_module_size} - 8 )) -s $(( ${grub_module_header_offset} + 8 )) -e '"%_c"' ${core_img_file_unlzma} | sed -e 's/\(\\0\).*$//');
 			      fi
 
 			   elif [ ${grub_module_type} -eq 4 ] ; then
@@ -2231,8 +2231,8 @@ grub2_info () {
 	   embedded_config_found=1;
 	   need_core_prologue=1;
 
-	   # Remove padding "\0"'s at the end.
-	   embedded_config=$( hexdump -v -e '"%_c"' ${core_img_file_type_2} | sed -e 's/\(\\0\)\+$//' );
+	   # Remove padding starting with the first "\0" at the end.
+	   embedded_config=$( hexdump -v -e '"%_c"' ${core_img_file_type_2} | sed -e 's/\(\\0\).*$//' );
 	fi
      fi
   fi
