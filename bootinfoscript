@@ -2198,7 +2198,9 @@ grub2_info () {
 			      fi
 			   fi
 
-			   grub_module_header_offset=$(( ${grub_module_header_offset} + ${grub_module_size} ));
+			   # Next module is always aligned on 4 bytes boundary on i386,
+			   # but sometimes grub stores shorter size. Make sure to adjust it.
+			   grub_module_header_offset=$(( ${grub_module_header_offset} + 8 + (((${grub_module_size} - 8 + 3) >> 2) << 2) ));
 
 			 done
 		      fi	      
