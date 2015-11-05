@@ -1881,6 +1881,7 @@ grub2_info () {
   local grub_module_type grub_module_size grub_module_header_offset grub_modules_end_offset;
   local lzma_compressed_size reed_solomon_redundancy reed_solomon_length boot_dev boot_drive;
   local core_img_flavour='detect' modname all_modules need_core_prologue=0;
+  local grub_module_header_next;
 
   > ${core_img_file_type_2}
 
@@ -2112,7 +2113,24 @@ grub2_info () {
 			 # embedded config and prefix become 3 and 4 on fedora.
 			 while [ ${grub_module_header_offset} -lt ${grub_modules_end_offset} ] ; do
 
+			   if [ $(( ${grub_modules_end_offset} - ${grub_module_header_offset} )) -lt 8 ] ; then
+			      echo 'Remaining space in GRUB2 module list too short for a module' >&2;
+			      all_modules="${all_modules} <short>";
+			      need_core_prologue=1;
+			      break
+			   fi
+
 			   eval $( hexdump -v -n 8 -s ${grub_module_header_offset} -e '1/4 "grub_module_type=%u; " 1/4 "grub_module_size=%u;"' ${core_img_file_unlzma} );
+			   # Next module is always aligned on 4 bytes boundary on i386,
+			   # but sometimes grub stores shorter size. Make sure to adjust it.
+			   grub_module_header_next=$(( ${grub_module_header_offset} + 8 + (((${grub_module_size} - 8 + 3) >> 2) << 2) ));
+
+			   if [ ${grub_module_header_next} -gt ${grub_modules_end_offset} ] ; then
+			      printf 'GRUB2 module size too large; skipping remaining modules. Size left: %d\n' $(( {grub_modules_end_offset} - ${grub_module_header_offset} )) >&2;
+			      all_modules="${all_modules} <skipped>";
+			      need_core_prologue=1;
+			      break
+			   fi
 
 			   if [ ${grub_module_type} -eq 0 ] ; then
 			      # Regular ELF module
@@ -2198,9 +2216,7 @@ grub2_info () {
 			      fi
 			   fi
 
-			   # Next module is always aligned on 4 bytes boundary on i386,
-			   # but sometimes grub stores shorter size. Make sure to adjust it.
-			   grub_module_header_offset=$(( ${grub_module_header_offset} + 8 + (((${grub_module_size} - 8 + 3) >> 2) << 2) ));
+			   grub_module_header_offset=${grub_module_header_next};
 
 			 done
 		      fi	      
