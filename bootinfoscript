@@ -3277,6 +3277,8 @@ for HI in ${!HDName[@]} ; do
 	    33c090) BL='DiskCryptor';;
 	    33c0fa) # Look at bytes 0x5B-5D: different offsets for jump target
 	      case ${MBR_512:182:6} in
+		0fb6c6) BL='Syslinux GPTMBR (5.10 and higher)';;
+		bb007c) BL='Syslinux GPTMBR (4.04-5.01)';;
 		e82101) BL='Syslinux MBR (4.04-4.07)';;
 		e83501) BL='Syslinux MBR (5.00 and higher)';;
 	      esac;;
@@ -3315,6 +3317,16 @@ for HI in ${!HDName[@]} ; do
 		      7cb8) BL='Syslinux MBR (3.36-3.51)';;
 		      b442) BL='Syslinux MBR (3.00-3.35)';;
 		      bb00) BL='Syslinux MBR (3.52-3.60)';;
+		      e2f8) # Syslinux pre-4.04; look at bytes 0x82-0x84
+		            case "${MBR_512:260:6}" in
+			      31f65f) BL='Syslinux GPTMBR (4.00-4.03)';;
+			      5e5974) BL='Syslinux GPTMBR (3.72-3.73)';;
+			      5e5958) # look at bytes 0xe-0xf
+			              case "${MBR_512:28:4}" in
+				        528e) BL='Syslinux GPTMBR (3.70-3.71)';;
+				        8ec0) BL='Syslinux GPTMBR (3.74-4.03)';;
+				      esac;;
+			    esac;;
 		      e879) BL='ISOhybrid (Syslinux 3.74-3.80)';;
 		    esac;;
 	    fa31c9) BL='Master Boot LoaDeR';;   
