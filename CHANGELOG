@@ -4,7 +4,7 @@ CHANGELOG:
 Version 0.73 (2015-11-14)
   * Try harder to remove padding bytes in embedded config - they may not be
     all zeroes.
-  * Fix GRUB2 module traveral logic (align stored size to pointer boundry).
+  * Fix GRUB2 module traversal logic (align stored size to pointer boundary).
   * Add signatures for Syslinux GPTMBR.
 
 Version 0.72 (2015-07-29)
