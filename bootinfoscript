@@ -1040,7 +1040,7 @@ Read8Bytes () {
   # Get ${first4} and ${second4} bytes at once.
   eval $(hexdump -v -s ${start} -n 8 -e '1/4 "first4=%u; " 1/4 "second4=%u"' ${device});
 
-  echo $(( ${second4} * 1073741824 + ${first4} ));
+  echo $(( ${second4} * 4294967296 + ${first4} ));
 }
 
 
@@ -1188,11 +1188,12 @@ ReadPT () {
 
 ReadEFI () {
   local HI=$1 GPT_file=$2 drive size N=0 i=0 format label PRStart start end type size system;
+  local attrs attrstr attrs_other j;
 
   drive="${HDName[${HI}]}";
-  format='%-10s %14s%14s%14s %s\n';
+  format='%-10s %5s %14s%14s%14s %s\n';
 
-  printf "${format}" 'Partition' 'Start Sector' 'End Sector' '# of Sectors' 'System' >> ${GPT_file};
+  printf "${format}" 'Partition' 'Attrs' 'Start Sector' 'End Sector' '# of Sectors' 'System' >> ${GPT_file};
 
   HDStart[${HI}]=$( Read8Bytes 552 ${drive});
   HDEnd[${HI}]=$(   Read8Bytes 560 ${drive});
@@ -1215,7 +1216,42 @@ ReadEFI () {
        system=$(UUIDToSystem ${type});
        label=${drive}$((${i}+1));
 
-       printf "${format}" "${label}" "$(InsertComma ${start})" "$(InsertComma ${end})" "$(InsertComma ${size})" "${system}"  >> ${GPT_file};
+       # Partition attributes are 8 bytes long and bash arithmetic is signed.
+       # High bits are used by Windows which automatically overflows computed
+       # 64 bit number. As we are interested in low bits only, just check it
+       # and output the rest verbatim if present.
+       attrs=$(hexdump -v -s $((${PRStart}+48+${PRSize}*${i})) -n 1 -e '/1 "%02x"' ${drive});
+       attrs_other=$(hexdump -v -s $((${PRStart}+49+${PRSize}*${i})) -n 7 -e '/1 "%02x"' ${drive});
+
+       if (( 0x${attrs} & 1 )) ; then
+	  attrstr='R';
+       else
+          attrstr=' ';
+       fi
+
+       if (( 0x${attrs} & 2 )) ; then
+	  attrstr="N${attrstr}";
+       else
+          attrstr=" ${attrstr}";
+       fi
+
+       if (( 0x${attrs} & 4 )) ; then
+	  attrstr="B${attrstr}";
+       else
+          attrstr=" ${attrstr}";
+       fi
+
+       if (( 0x${attrs} & 8 )) || [ ${attrs_other} != '00000000000000' ] ; then
+	  attrstr="+$attrstr";
+          echo                                     >> ${Unknown_MBR};
+          echo  "${label}: unknown GPT attributes" >> ${Unknown_MBR};
+          for (( j = 12; j >= 0; j -= 2 )) ; do
+	     printf '%s' ${attrs_other:j:2}        >> ${Unknown_MBR}
+	  done
+	  echo ${attrs}                            >> ${Unknown_MBR}
+       fi
+
+       printf "${format}" "${label}" "${attrstr}" "$(InsertComma ${start})" "$(InsertComma ${end})" "$(InsertComma ${size})" "${system}"  >> ${GPT_file};
 
        NamesArray[${PI}]=${label};
        DeviceArray[${PI}]=${label};
@@ -1229,6 +1265,8 @@ ReadEFI () {
        ParentArray[${PI}]='';
     fi
   done
+  echo >> ${GPT_file};
+  echo 'Attributes: R=Required, N=No Block IO, B=Legacy BIOS Bootable, +=More bits set' >> ${GPT_file};
 }
 
 
