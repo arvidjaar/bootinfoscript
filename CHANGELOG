@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+Version 0.74 (2016-02-06)
+  * Display GPT partition attributes.
+
 Version 0.73 (2015-11-14)
   * Try harder to remove padding bytes in embedded config - they may not be
     all zeroes.
