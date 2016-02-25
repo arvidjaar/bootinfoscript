@@ -1779,18 +1779,27 @@ grub2_read_blocklist () {
   local hdd="$1";
   local core_img_file="$2";
 
-  local sector_nr fragment_size fragment_offset=1 block_list=500;
+  local sector_nr_low sector_nr_high sector_nr fragment_size;
+  local fragment_offset=1 block_list=500;
 
   # Assemble fragments from "hdd" passed to grub2_info.
   # Each block list entry is 12 bytes long and consists of
-  #   8 bytes = fragment start absolute disk offset in sectors
-  #   2 bytes = fragment size in sectors
+  #   8 bytes = fragment start absolute disk offset in sectors of 512 bytes
+  #   2 bytes = fragment size in sectors of 512 bytes
   #   2 bytes = memory segment to load fragment into
   # Entries start at the end of the first sector of core.img and
   # go down. End marker is all zeroes.
+  #
+  # Blocklists were changed to 64 bit in 2006, so all versions BIS detects
+  # should have it.
+  #
+  # Older versions of hexdump do not support 8 byte integers, so read
+  # high and low words separately.
   
   while [ ${block_list} -gt 12 ] ; do
-     sector_nr=$(hexdump -v -n 8 -s ${block_list} -e '1/8 "%u"' ${core_img_file});
+     sector_nr_low=$(hexdump -v -n 4 -s ${block_list} -e '1/4 "%u"' ${core_img_file});
+     sector_nr_high=$(hexdump -v -n 4 -s $((block_list+4)) -e '1/4 "%u"' ${core_img_file});
+     let "sector_nr = (sector_nr_high << 32) + sector_nr_low";
      if [ ${sector_nr} -eq 0 ] ; then
 	return;
      fi
@@ -1935,8 +1944,15 @@ grub2_info () {
   # BIOS drive number on which grub2 looks for its second stage (=core.img):
   #   - "0xff" means that grub2 will use the BIOS drive number passed via the DL register.
   #   - if this value isn't "0xff", that value will used instead.
+  # Since version 1.97 GRUB2 is using only 0xff. We cannot reliably determine BIOS numbers
+  # anyway, so just skip core.img detection in this case.
   drive_nr_hex=$(hexdump -v -s ${drive_offset} -n 1 -e '"0x%02x"' "${stage1}" 2>> ${Trash});
   drive_nr=$(( ${drive_nr_hex} - 127 ));
+
+  if [ "${drive_nr_hex}" != '0xff' ] ; then
+    Grub2_Msg="is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
+    return
+  fi
 
   Grub2_Msg="looks at sector ${sector_nr} of the same hard drive for core.img";
 
@@ -1954,7 +1970,10 @@ grub2_info () {
 	     dd if="${stage1}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
 	  else
 	     # Use "hdd" passed to grub2_info.
-	     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} count=1024 2>> ${Trash};
+	     # First make sure to collect core.img fragments. Read the first block of
+	     # core.img and assemble it further from blocklists
+	     dd if="${hdd}" of=${core_img_file} skip=${sector_nr} count=1 2>> ${Trash};
+	     grub2_read_blocklist "${hdd}" ${core_img_file};
 	  fi
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
@@ -2076,12 +2095,6 @@ grub2_info () {
 		   echo 'To be able to see for which directory Grub2 (v1.99) looks for, install "xz" or "lzma".' >&2;
 		fi
 	     elif [ "${grub2_version}" = '2.00' ] ; then
-
-		# First make sure to collect core.img fragments if it is
-		# embedded.
-		if [ "${core_source}" = 'disk' ] || [ "${core_source}" = 'partition' ] ; then
-		   grub2_read_blocklist "${hdd}" ${core_img_file};
-		fi
 
 		# For Grub2 (v2.00), the core_dir is stored in the compressed part of core.img in the same
 		# way as the modules and embedded config file.
@@ -2299,10 +2312,6 @@ grub2_info () {
      Grub2_Msg="${Grub2_Msg}, but core.img can not be found at this location";
   else
      # core.img found.
-
-     if [ "${drive_nr_hex}" != '0xff' ] ; then
-	Grub2_Msg="${Grub2_Msg}. Grub2 is configured to load core.img from BIOS drive ${drive_nr} (${drive_nr_hex}) instead of using the boot drive passed by the BIOS";
-     fi
 
      Grub2_Msg="${Grub2_Msg}. core.img is at this location";
 
@@ -3276,7 +3285,7 @@ for HI in ${!HDName[@]} ; do
     eb4c) ## Grub2 (v1.96) is in the MBR. ##
 	  BL='Grub2 (v1.96)';
 
-	  grub2_info ${drive} ${drive} '1.96' 'drive';
+	  grub2_info ${drive} ${drive} '1.96' 'disk';
 
 	  Message="${Message} and ${Grub2_Msg}";;
 
@@ -3286,7 +3295,7 @@ for HI in ${!HDName[@]} ; do
 		0020) grub2_version='1.99-2.00'; BL='Grub2 (v1.99-2.00)';;
 	  esac
 
-	  grub2_info ${drive} ${drive} ${grub2_version} 'drive';
+	  grub2_info ${drive} ${drive} ${grub2_version} 'disk';
 
 	  # Set a more exact version number (1.99 or 2.00), if '1.99-2.00' was
 	  # passed to the grub2_info function.
