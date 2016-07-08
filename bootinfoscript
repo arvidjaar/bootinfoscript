@@ -2015,8 +2015,6 @@ grub2_info () {
 		core_dir=$(hexdump -v -s ${directory_offset} -n 64 -e '"%_u"' ${core_img_file} | sed 's/nul[^$]*//');
 	     fi
 
-
-
 	     if [ "${grub2_version}" = '1.99' ] ; then
 
 		# For Grub2 (v1.99), the core_dir is just at the beginning of the compressed part of core.img.
@@ -2835,6 +2833,7 @@ Get_Partition_Info() {
 	'LVM2_member'		) part_no_mount=1;;
 	'swap'			) part_no_mount=1;;
 	'unknown volume type'	) part_no_mount=1;;
+	'zfs_member'		) part_no_mount=1;;
   esac
 
   if [ "${part_no_mount}" -eq 0 ] ; then
