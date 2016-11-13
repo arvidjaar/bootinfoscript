@@ -3327,6 +3327,13 @@ for HI in ${!HDName[@]} ; do
 		bb007c) BL='Syslinux GPTMBR (4.04-5.01)';;
 		e82101) BL='Syslinux MBR (4.04-4.07)';;
 		e83501) BL='Syslinux MBR (5.00 and higher)';;
+		e81001) # Syslinux ALTMBR; look at byte 0xd9 for different version and
+			# byte 0x1b7 (439) for boot partition
+		  case ${MBR_512:434:2} in
+		    c3) BL='Syslinux ALTMBR (4.04-4.05)';;
+		    c6) BL='Syslinux ALTMBR (4.06 and higher)';;
+		  esac;
+		  BL="${BL} with boot partition 0x${MBR_512:878:2}";;
 	      esac;;
 	  esac;;
     33ed) # Look at bytes 0x80-0x81 to be more specific about the Syslinux variant/version.
