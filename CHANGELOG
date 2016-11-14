@@ -1,6 +1,10 @@
 CHANGELOG:
 ==========
 
+Version 0.75 (2016-11-14)
+  * Detect Syslinux 4.04 and higher ALTMBR; also display embedded
+    boot partition number.
+
 Version 0.74 (2016-02-06)
   * Display GPT partition attributes.
 
