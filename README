@@ -67,6 +67,7 @@ Features:
     - For GRUB2: display the disk offset of the core.img as recorded in
                  the boot sector. Parse core.img and display embedded
                  modules, prefix and config script.
+    - For Syslinux altmbr: display embedded boot partition number.
     - If the MBR is unknown, display the whole MBR.
 
 * Look at all partitions:
