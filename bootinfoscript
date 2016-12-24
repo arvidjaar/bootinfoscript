@@ -626,7 +626,7 @@ exec 2> ${Error_Log};
 
 _SHOPTS=$(shopt -p extglob nullglob);
 shopt -s extglob nullglob;
-All_Hard_Drives=$(echo /dev/hd+([a-z]) /dev/sd+([a-z]) /dev/xvd+([a-z]) /dev/vd+([a-z]) 2>> ${Trash});
+All_Hard_Drives=$(echo /dev/hd+([a-z]) /dev/sd+([a-z]) /dev/xvd+([a-z]) /dev/vd+([a-z]) /dev/nvme+([0-9])n+([0-9]) 2>> ${Trash});
 eval "$_SHOPTS";
 unset _SHOPTS;
 
