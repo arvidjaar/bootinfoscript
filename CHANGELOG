@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+Version 0.76 (2017-04-13)
+  * Display /boot/grub/custom.cfg
+
 Version 0.75 (2016-11-14)
   * Detect Syslinux 4.04 and higher ALTMBR; also display embedded
     boot partition number.
