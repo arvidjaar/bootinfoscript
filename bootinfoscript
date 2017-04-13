@@ -467,6 +467,7 @@ Boot_Prog_Fat='
 Boot_Files_Normal='
 	/menu.lst	/grub/menu.lst	/boot/grub/menu.lst	/NST/menu.lst	
 	/grub.cfg	/grub/grub.cfg	/boot/grub/grub.cfg	/grub2/grub.cfg	/boot/grub2/grub.cfg
+	/custom.cfg	/grub/custom.cfg	/boot/grub/custom.cfg	/grub2/custom.cfg	/boot/grub2/custom.cfg
 	/burg.cfg	/burg/burg.cfg	/boot/burg/burg.cfg
 	/grub.conf	/grub/grub.conf	/boot/grub/grub.conf	/grub2/grub.conf	/boot/grub2/grub.conf
 	/ubuntu/disks/boot/grub/menu.lst	/ubuntu/disks/install/boot/grub/menu.lst	/ubuntu/winboot/menu.lst
