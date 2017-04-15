@@ -1979,10 +1979,19 @@ grub2_info () {
 
 	  magic=$(hexdump -v -n 4 -e '/1 "%02x"' ${core_img_file});
 
+	  # 5256be1b - upstream diskboot.S
+	  # 5256be6f - unknown
+	  # 52e82801 - Ubuntu diskboot.S with conditional message
 	  # 52bff481 - RHEL7 diskboot.S with patched out message
-	  if ( [ "${magic}" = '5256be1b' ] || [ "${magic}" = '5256be6f' ] || [ "${magic}" = '52e82801' ] || [ "${magic}" = '52bff481' ] ) ; then
-	     # core.img file was found.
-	     core_img_found=1;
+	  # 5256be63 - trustedgrub2 1.4
+	  # 5256be56 - diskboot.S with mjg TPM patches (e.g. in openSUSE Tumbleweed)
+
+	  case "${magic}" in
+	     '5256be1b'|'5256be6f'|'52e82801'|'52bff481'|'5256be63'|'5256be56')
+	        core_img_found=1;;
+	  esac
+
+	  if [ ${core_img_found} -eq 1 ] ; then
 
 	     if ( [ "${grub2_version}" = '1.99' ] || [ "${grub2_version}" = '1.99-2.00' ] || [ "${grub2_version}" = '2.00' ] ) ; then
 		# Find the last 8 bytes of lzma_decode to find the offset of the lzma_stream:
