@@ -2863,6 +2863,9 @@ Get_Partition_Info() {
 	fi
      fi
 
+     # Clear mount errors for previous partition
+     > ${Mount_Error}
+
      # Try to mount the partition.
      if [ x"${CheckMount}" != x'' ] || mount -r  -t "${type}" ${part} "${mountname}" 2>> ${Mount_Error} \
 	|| ( [ "${type}" = ntfs ] &&  ntfs-3g -o ro  ${part} "${mountname}" 2>> ${Mount_Error} ) ; then
