@@ -2845,6 +2845,7 @@ Get_Partition_Info() {
 	'swap'			) part_no_mount=1;;
 	'unknown volume type'	) part_no_mount=1;;
 	'zfs_member'		) part_no_mount=1;;
+	''			) part_no_mount=1;;
   esac
 
   if [ "${part_no_mount}" -eq 0 ] ; then
