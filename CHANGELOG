@@ -1,6 +1,11 @@
 CHANGELOG:
 ==========
 
+Version 0.77 (2018-06-10)
+  * Add core.img diskboot signature for trustedgrub2
+  * Add core.img diskboot signature for Matthew Garrett grub2 TPM patches
+  * Look for custom.cfg also on FAT
+
 Version 0.76 (2017-04-13)
   * Display /boot/grub/custom.cfg
 

@@ -1,13 +1,13 @@
 #!/bin/bash
-VERSION='0.76';
-RELEASE_DATE='13 April 2017';
+VERSION='0.77';
+RELEASE_DATE='10 June 2018';
 LAST_GIT_COMMIT_SHORTLOG='';
 LAST_GIT_COMMIT_DATE='';
 ################################################################################
 #                                                                              #
 # Copyright (c) 2009-2010      Ulrich Meierfrankenfeld                         #
 # Copyright (c) 2011-2012      Gert Hulselmans                                 #
-# Copyright (c) 2013-2017      Andrei Borzenkov                                #
+# Copyright (c) 2013-2018      Andrei Borzenkov                                #
 #                                                                              #
 # Permission is hereby granted, free of charge, to any person obtaining a copy #
 # of this software and associated documentation files (the "Software"), to     #
