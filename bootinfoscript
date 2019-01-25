@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION='0.77';
-RELEASE_DATE='10 June 2018';
+VERSION='0.78';
+RELEASE_DATE='25 January 2019';
 LAST_GIT_COMMIT_SHORTLOG='';
 LAST_GIT_COMMIT_DATE='';
 ################################################################################
@@ -626,7 +626,7 @@ exec 2> ${Error_Log};
 #
 #   Support more than 26 drives.
 
-All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/xvd[a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] 2>> ${Trash});
+All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/xvd[a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] /dev/nvme[0-9]n[0-9] /dev/nvme[0-9]n[0-9][0-9] /dev/nvme[0-9][0-9]n[0-9] /dev/nvme[0-9][0-9]n[0-9][0-9] 2>> ${Trash});
 
 
 ## Add found RAID disks to list of hard drives. ##
@@ -1090,6 +1090,7 @@ ReadPT () {
   local HI=$1 StartEx=$2 N=$3 PT_file=$4 format=$5 EPI=$6 Base_Sector;
   local LinuxIndex=$7 boot size start end type drive system;
   local i=0 boot_hex label limit MBRSig;
+  local LinuxIndexExt;
 
   drive=${HDName[${HI}]};
   limit=${HDSize[${HI}]};
@@ -1143,15 +1144,18 @@ ReadPT () {
 	     fi
 
 	     LinuxIndex=$((${LinuxIndex}+1));
+	     if [ "${drive:0:9}" = "/dev/nvme" ]; then
+	         LinuxIndexExt="p$LinuxIndex"
+	     fi
 	     end=$((${start}+${size}-1));
 
 	     [[ "${HDPT[${HI}]}" = 'BootIt' ]] && label="${NamesArray[${EPI}]}_" || label=${drive};
 
 	     system=$(HexToSystem ${type});
 
-	     printf "${format}" "${label}${LinuxIndex}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
+	     printf "${format}" "${label}${LinuxIndexExt}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
 
-	     NamesArray[${PI}]="${label}${LinuxIndex}";
+	     NamesArray[${PI}]="${label}${LinuxIndexExt}";
 	     StartArray[${PI}]=${start};
 	     EndArray[${PI}]=${end};
 	     TypeArray[${PI}]=${type};
@@ -1161,7 +1165,7 @@ ReadPT () {
 	     DriveArray[${PI}]=${HI};
 	     ParentArray[${PI}]=${EPI};
 
-             ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${LinuxIndex};
+             ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${LinuxIndexExt};
 
 	     if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
 	        ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${PI} 4;
@@ -3196,7 +3200,7 @@ for drive in ${All_Hard_Drives} ; do
   PrintBlkid ${drive};
 
   if [ 0 -lt ${size} 2>> ${Trash} ] ; then
-     if [ x"$(blkid  ${drive})" = x'' ] || [ x"$(blkid  | grep ${drive}:)" = x'' ] ; then
+     if [ x"$(blkid  ${drive})" = x'' ] || [ x"$(blkid -p -s USAGE ${drive})" = x'' ] ; then
 	# Drive is not a filesytem.
 
 	size=$((2*size));
