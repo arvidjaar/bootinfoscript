@@ -2963,12 +2963,20 @@ Get_Partition_Info() {
 
 	if [ "${type}" = 'vfat' ] ; then
 	   # Check FAT filesystems for EFI boot files.
-	   for file in "${mountname}"/efi/{,*/}*/*.efi; do
+	   for file in "${mountname}"/efi/{,*/}*/{*.efi,grub.cfg}; do
 	     # Remove "${mountname}" part of the filename.
 	     file="${file#${mountname}}";
 
 	     if [ -f "${mountname}${file}" ] && [ -s "${mountname}${file}" ] && FileNotMounted "${mountname}${file}" "${mountname}" ; then 
 		BootFiles="${BootFiles}  ${file}";          
+
+		# display content.
+		if [ ${file##*/} = 'grub.cfg' ] ; then
+		   titlebar_gen "${name}" ${file};			# Generates a titlebar above each file listed.
+		   echo '--------------------------------------------------------------------------------' >> "${Log1}";
+		   cat "${mountname}${file}"  >> "${Log1}";
+		   echo '--------------------------------------------------------------------------------' >> "${Log1}";
+		fi
 	     fi
 	   done
 
