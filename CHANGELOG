@@ -1,6 +1,9 @@
 CHANGELOG:
 ==========
 
+Version 0.78 (2019-10-09)
+  * Also display \EFI\*\grub.cfg on EFI System Partition
+
 Version 0.77 (2018-06-10)
   * Add core.img diskboot signature for trustedgrub2
   * Add core.img diskboot signature for Matthew Garrett grub2 TPM patches

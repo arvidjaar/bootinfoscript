@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION='0.77';
-RELEASE_DATE='10 June 2018';
+VERSION='0.78';
+RELEASE_DATE='09 October 2019';
 LAST_GIT_COMMIT_SHORTLOG='';
 LAST_GIT_COMMIT_DATE='';
 ################################################################################
