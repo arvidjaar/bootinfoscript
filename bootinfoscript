@@ -626,7 +626,7 @@ exec 2> ${Error_Log};
 #
 #   Support more than 26 drives.
 
-All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/xvd[a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] 2>> ${Trash});
+All_Hard_Drives=$(ls /dev/hd[a-z] /dev/hd[a-z][a-z] /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/xvd[a-z] /dev/vd[a-z] /dev/vd[a-z][a-z] /dev/nvme[0-9]n[0-9] 2>> ${Trash});
 
 
 ## Add found RAID disks to list of hard drives. ##
@@ -1143,15 +1143,17 @@ ReadPT () {
 	     fi
 
 	     LinuxIndex=$((${LinuxIndex}+1));
+	     [[ -e "${drive}p${LinuxIndex}" ]] && partIndex="p${LinuxIndex}" || partIndex="${LinuxIndex}";
+
 	     end=$((${start}+${size}-1));
 
 	     [[ "${HDPT[${HI}]}" = 'BootIt' ]] && label="${NamesArray[${EPI}]}_" || label=${drive};
 
 	     system=$(HexToSystem ${type});
 
-	     printf "${format}" "${label}${LinuxIndex}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
+	     printf "${format}" "${label}${partIndex}" "${boot}" $(InsertComma ${start}) "$(InsertComma ${end})" "$(InsertComma ${size})" "${type}" "${system}" >> ${PT_file};
 
-	     NamesArray[${PI}]="${label}${LinuxIndex}";
+	     NamesArray[${PI}]="${label}${partIndex}";
 	     StartArray[${PI}]=${start};
 	     EndArray[${PI}]=${end};
 	     TypeArray[${PI}]=${type};
@@ -1161,7 +1163,7 @@ ReadPT () {
 	     DriveArray[${PI}]=${HI};
 	     ParentArray[${PI}]=${EPI};
 
-             ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${LinuxIndex};
+             ( [[ x"${EPI}" = x'' ]] || [[ x"${DeviceArray[${EPI}]}" != x'' ]] ) && DeviceArray[${PI}]=${drive}${partIndex};
 
 	     if [[ "${type}" = '5' || "${type}" = 'f' ]] ; then
 	        ReadPT ${HI} ${start} 2 ${PT_file} "${format}" ${PI} 4;
@@ -1216,7 +1218,7 @@ ReadEFI () {
 
        size=$((${end}-${start}+1));
        system=$(UUIDToSystem ${type});
-       label=${drive}$((${i}+1));
+       [[ -e "${drive}p$((${i}+1))" ]] && label="${drive}p$((${i}+1))" || label=${drive}$((${i}+1));
 
        # Partition attributes are 8 bytes long and bash arithmetic is signed.
        # High bits are used by Windows which automatically overflows computed
