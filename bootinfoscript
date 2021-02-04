@@ -296,6 +296,7 @@ fi
 # Programs that are in /bin or /usr/bin.
 Programs='
 	basename
+	bc
 	cat
 	chown
 	dd
@@ -2550,7 +2551,7 @@ last_block_of_file () {
 
 Get_Partition_Info() {
   local Log="$1" Log1="$2" part="$3" name="$4" mountname="$5"  kind="$6"  start="$7"  end="$8" system="$9" PI="${10}";
-  local line size=$((end-start)) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
+  local line size=$(echo $end-$start | bc) BST='' BSI='' BFI='' OS='' BootFiles='' Bytes80_to_83='' Bytes80_to_81='' offset='';
   local offset_menu='' part_no_mount=0 com32='' com32_version='';
 
 
